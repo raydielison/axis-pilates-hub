@@ -1,14 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { criarAluno, listarAlunosAdmin, listarPlanos, seedAlunosIniciais } from "@/lib/admin.functions";
+import { criarAluno, excluirAluno, listarAlunosAdmin, listarPlanos, seedAlunosIniciais } from "@/lib/admin.functions";
 import { PageHeader } from "@/components/ui-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -19,6 +20,7 @@ function AlunosAdmin() {
   const fnPlanos = useServerFn(listarPlanos);
   const fnNew = useServerFn(criarAluno);
   const fnSeed = useServerFn(seedAlunosIniciais);
+  const fnDel = useServerFn(excluirAluno);
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["admin-alunos"], queryFn: () => fn() });
   const { data: planos } = useQuery({ queryKey: ["planos"], queryFn: () => fnPlanos() });
@@ -53,6 +55,15 @@ function AlunosAdmin() {
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
 
+  const mDel = useMutation({
+    mutationFn: (aluno_id: string) => fnDel({ data: { aluno_id } }),
+    onSuccess: () => {
+      toast.success("Aluno excluído");
+      qc.invalidateQueries({ queryKey: ["admin-alunos"] });
+    },
+    onError: (e: Error) => toast.error("Erro ao excluir", { description: e.message }),
+  });
+
   return (
     <div>
       <PageHeader title="Alunos" subtitle={`${data?.length ?? 0} alunos cadastrados`}
@@ -61,41 +72,47 @@ function AlunosAdmin() {
             <Button variant="outline" disabled={mSeed.isPending} onClick={() => mSeed.mutate()}>
               {mSeed.isPending ? "Importando…" : "Importar lista inicial"}
             </Button>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button className="bg-primary hover:bg-primary/90"><Plus className="h-4 w-4 mr-1" />Novo</Button></DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Cadastrar aluno</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <div><Label>Nome</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
-                <div><Label>E-mail</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>CPF</Label><Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} /></div>
-                  <div><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild><Button className="bg-primary hover:bg-primary/90"><Plus className="h-4 w-4 mr-1" />Novo</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Cadastrar aluno</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div><Label>Nome</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+                  <div><Label>E-mail</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>CPF</Label><Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} /></div>
+                    <div><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
+                  </div>
+                  <div><Label>Endereço</Label><Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} /></div>
+                  <div>
+                    <Label>Plano</Label>
+                    <Select value={form.plano_id} onValueChange={(v) => setForm({ ...form, plano_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        {(planos ?? []).map((p: any) => <SelectItem key={p.id} value={p.id}>{p.nome} — R$ {Number(p.valor).toFixed(2)}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button className="w-full bg-primary hover:bg-primary/90" disabled={m.isPending} onClick={() => m.mutate()}>
+                    {m.isPending ? "Criando…" : "Criar aluno"}
+                  </Button>
                 </div>
-                <div><Label>Endereço</Label><Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} /></div>
-                <div>
-                  <Label>Plano</Label>
-                  <Select value={form.plano_id} onValueChange={(v) => setForm({ ...form, plano_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {(planos ?? []).map((p: any) => <SelectItem key={p.id} value={p.id}>{p.nome} — R$ {Number(p.valor).toFixed(2)}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button className="w-full bg-primary hover:bg-primary/90" disabled={m.isPending} onClick={() => m.mutate()}>
-                  {m.isPending ? "Criando…" : "Criar aluno"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
           </div>
         } />
-
 
       <div className="rounded-2xl border bg-card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted text-xs uppercase tracking-wider text-muted-foreground">
-            <tr><th className="text-left p-3">Nome</th><th className="text-left p-3">E-mail</th><th className="text-left p-3">CPF</th><th className="text-left p-3">Plano</th><th className="text-left p-3">Status</th></tr>
+            <tr>
+              <th className="text-left p-3">Nome</th>
+              <th className="text-left p-3">E-mail</th>
+              <th className="text-left p-3">CPF</th>
+              <th className="text-left p-3">Plano</th>
+              <th className="text-left p-3">Status</th>
+              <th className="text-right p-3">Ações</th>
+            </tr>
           </thead>
           <tbody>
             {(data ?? []).map((a: any) => (
@@ -105,6 +122,29 @@ function AlunosAdmin() {
                 <td className="p-3">{a.cpf ?? "—"}</td>
                 <td className="p-3">{a.plano?.nome ?? "—"}</td>
                 <td className="p-3"><span className={`px-2 py-0.5 rounded-full text-xs ${a.status === "ativo" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{a.status}</span></td>
+                <td className="p-3 text-right">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled={mDel.isPending}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir aluno?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação não pode ser desfeita. Todos os dados de {a.profile?.nome ?? "este aluno"} (horários, presenças, reposições, pagamentos e observações) serão removidos permanentemente.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => mDel.mutate(a.id)}>
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </td>
               </tr>
             ))}
           </tbody>
