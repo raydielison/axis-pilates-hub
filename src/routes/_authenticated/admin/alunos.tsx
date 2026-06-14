@@ -88,7 +88,9 @@ function AlunosAdmin() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         } />
+
 
       <div className="rounded-2xl border bg-card overflow-x-auto">
         <table className="w-full text-sm">
