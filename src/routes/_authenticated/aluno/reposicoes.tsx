@@ -55,7 +55,7 @@ function Reposicoes() {
                 onClick={() => solicitar.mutate(s.hora)}
                 className={`rounded-xl p-3 text-sm border transition ${cheio
                     ? "bg-muted text-muted-foreground cursor-not-allowed"
-                    : "bg-card hover:bg-orange-500 hover:text-white hover:border-orange-500"
+                    : "bg-card hover:bg-primary hover:text-primary-foreground hover:border-primary"
                   }`}
               >
                 <div className="font-display font-bold">{s.hora}</div>

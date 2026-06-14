@@ -22,7 +22,7 @@ function Horario() {
               <p className="font-display font-semibold">{DIAS[h.dia_semana]}</p>
               <p className="text-sm text-muted-foreground">Professor: {h.professor?.profile?.nome ?? "—"}</p>
             </div>
-            <p className="font-display text-2xl font-bold text-orange-500">{String(h.hora).slice(0, 5)}</p>
+            <p className="font-display text-2xl font-bold text-primary">{String(h.hora).slice(0, 5)}</p>
           </div>
         ))}
         {data && data.length === 0 && <p className="text-muted-foreground">Nenhum horário fixo cadastrado.</p>}

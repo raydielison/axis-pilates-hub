@@ -39,7 +39,7 @@ function Agenda() {
                   const ratio = arr.length / 4;
                   return (
                     <td key={i} className="p-2 align-top">
-                      <div className={`rounded-lg p-1.5 border ${ratio >= 1 ? "bg-red-500/10 border-red-500/30" : ratio >= 0.5 ? "bg-orange-500/10 border-orange-500/30" : "bg-green-500/10 border-green-500/30"}`}>
+                      <div className={`rounded-lg p-1.5 border ${ratio >= 1 ? "bg-red-500/10 border-red-500/30" : ratio >= 0.5 ? "bg-primary/10 border-primary/30" : "bg-green-500/10 border-green-500/30"}`}>
                         <p className="text-[10px] uppercase font-semibold">{arr.length}/4</p>
                         {arr.slice(0, 2).map((a: any, j: number) => (
                           <p key={j} className="truncate text-[11px]">{a.aluno?.profile?.nome?.split(" ")[0]}</p>

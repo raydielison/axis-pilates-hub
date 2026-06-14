@@ -74,7 +74,7 @@ function AuthPage() {
                 <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
                   className="bg-zinc-800 border-zinc-700 text-white" placeholder="••••••••" />
               </div>
-              <Button type="submit" disabled={loading} className="w-full h-11 bg-orange-500 hover:bg-orange-600 text-white font-semibold">
+              <Button type="submit" disabled={loading} className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-semibold">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Entrar
               </Button>
@@ -87,7 +87,7 @@ function AuthPage() {
               type="button"
               onClick={handleSeed}
               disabled={seeding}
-              className="mt-3 text-orange-400 hover:text-orange-300 underline underline-offset-4"
+              className="mt-3 text-primary hover:text-primary/80 underline underline-offset-4"
             >
               {seeding ? "Criando dados de demonstração..." : "Criar dados de demonstração"}
             </button>

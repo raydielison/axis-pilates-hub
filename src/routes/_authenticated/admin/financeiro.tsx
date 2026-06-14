@@ -67,7 +67,7 @@ function Fin() {
                 <td className="p-3"><span className={`px-2 py-0.5 rounded-full text-xs ${CLS[p.status]}`}>{p.status}</span></td>
                 <td className="p-3 text-right">
                   {p.status !== "pago" && (
-                    <Button size="sm" disabled={m.isPending} className="bg-orange-500 hover:bg-orange-600" onClick={() => m.mutate(p.id)}>
+                    <Button size="sm" disabled={m.isPending} className="bg-primary hover:bg-primary/90" onClick={() => m.mutate(p.id)}>
                       Registrar
                     </Button>
                   )}

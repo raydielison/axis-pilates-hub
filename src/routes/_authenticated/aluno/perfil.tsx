@@ -56,7 +56,7 @@ function Perfil() {
           <Label>Contato de emergência</Label>
           <Input value={emerg} onChange={(e) => setEmerg(e.target.value)} placeholder="Nome e telefone" />
         </div>
-        <Button onClick={() => m.mutate()} disabled={m.isPending} className="bg-orange-500 hover:bg-orange-600">
+        <Button onClick={() => m.mutate()} disabled={m.isPending} className="bg-primary hover:bg-primary/90">
           {m.isPending ? "Salvando…" : "Salvar"}
         </Button>
       </div>

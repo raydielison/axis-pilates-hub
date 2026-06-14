@@ -26,7 +26,7 @@ function Rel() {
         <div className="grid grid-cols-12 gap-2 items-end h-44">
           {(data?.receitaPorMes ?? []).map((m: any) => (
             <div key={m.mes} className="flex flex-col items-center gap-1">
-              <div className="w-full bg-orange-500 rounded-t" style={{ height: `${(Number(m.valor) / max) * 100}%` }} title={`R$ ${m.valor}`} />
+              <div className="w-full bg-primary rounded-t" style={{ height: `${(Number(m.valor) / max) * 100}%` }} title={`R$ ${m.valor}`} />
               <span className="text-[10px] text-muted-foreground">{MESES[m.mes - 1]}</span>
             </div>
           ))}
