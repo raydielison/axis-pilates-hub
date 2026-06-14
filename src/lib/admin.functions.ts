@@ -187,6 +187,33 @@ export const seedAlunosIniciais = createServerFn({ method: "POST" })
     return { results };
   });
 
+export const excluirAluno = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ aluno_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: aluno, error: e0 } = await supabaseAdmin
+      .from("alunos").select("profile_id").eq("id", data.aluno_id).maybeSingle();
+    if (e0) throw e0;
+    if (!aluno) throw new Error("Aluno não encontrado");
+    const profileId = aluno.profile_id;
+    // Limpa dependências e o aluno; auth.users -> profiles devem cascatear via FK
+    await supabaseAdmin.from("horarios_fixos").delete().eq("aluno_id", data.aluno_id);
+    await supabaseAdmin.from("presencas").delete().eq("aluno_id", data.aluno_id);
+    await supabaseAdmin.from("reposicoes").delete().eq("aluno_id", data.aluno_id);
+    await supabaseAdmin.from("pagamentos").delete().eq("aluno_id", data.aluno_id);
+    await supabaseAdmin.from("observacoes_aluno").delete().eq("aluno_id", data.aluno_id);
+    const { error: e1 } = await supabaseAdmin.from("alunos").delete().eq("id", data.aluno_id);
+    if (e1) throw e1;
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", profileId);
+    const { error: e2 } = await supabaseAdmin.auth.admin.deleteUser(profileId);
+    if (e2) throw e2;
+    return { ok: true };
+  });
+
 export const criarProfessor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
