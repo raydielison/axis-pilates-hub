@@ -3,8 +3,9 @@ import { type ReactNode } from "react";
 import {
   Home, Calendar, ClipboardCheck, RotateCcw, Wallet, User, Users,
   CalendarDays, BookOpen, BarChart3, Settings, LogOut, GraduationCap,
-  CircleDollarSign, FileText, NotebookPen, Bell,
+  CircleDollarSign, FileText, NotebookPen, Bell, KeyRound,
 } from "lucide-react";
+import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -96,7 +97,14 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
             );
           })}
         </nav>
-        <div className="p-3 border-t border-sidebar-border">
+        <div className="p-3 border-t border-sidebar-border space-y-1">
+          <ChangePasswordDialog
+            trigger={
+              <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/80 hover:bg-sidebar-accent">
+                <KeyRound className="h-4 w-4 mr-2" /> Alterar senha
+              </Button>
+            }
+          />
           <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-sidebar-foreground/80 hover:bg-sidebar-accent">
             <LogOut className="h-4 w-4 mr-2" /> Sair
           </Button>
@@ -114,7 +122,12 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
               <p className="text-[9px] uppercase tracking-widest text-primary">{ROLE_LABEL[role]}</p>
             </div>
           </div>
-          <Button onClick={handleLogout} size="icon" variant="ghost"><LogOut className="h-4 w-4" /></Button>
+          <div className="flex items-center gap-1">
+            <ChangePasswordDialog
+              trigger={<Button size="icon" variant="ghost" aria-label="Alterar senha"><KeyRound className="h-4 w-4" /></Button>}
+            />
+            <Button onClick={handleLogout} size="icon" variant="ghost" aria-label="Sair"><LogOut className="h-4 w-4" /></Button>
+          </div>
         </header>
 
         <main className="flex-1 pb-20 md:pb-0">
