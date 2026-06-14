@@ -57,6 +57,10 @@ function AlunosAdmin() {
     <div>
       <PageHeader title="Alunos" subtitle={`${data?.length ?? 0} alunos cadastrados`}
         action={
+          <div className="flex gap-2">
+            <Button variant="outline" disabled={mSeed.isPending} onClick={() => mSeed.mutate()}>
+              {mSeed.isPending ? "Importando…" : "Importar lista inicial"}
+            </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button className="bg-primary hover:bg-primary/90"><Plus className="h-4 w-4 mr-1" />Novo</Button></DialogTrigger>
             <DialogContent>
