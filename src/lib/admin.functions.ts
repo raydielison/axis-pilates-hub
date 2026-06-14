@@ -153,6 +153,40 @@ export const criarAluno = createServerFn({ method: "POST" })
     return { ok: true, tempPassword };
   });
 
+export const seedAlunosIniciais = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const nomes = [
+      "Vanessa", "Jane Bini", "Douglas", "Daniela", "Barbara", "Carolaine",
+      "Carmen", "Amanda", "Beatriz", "Maria do Carmo", "Antonio", "Vera",
+      "Flavia Souza", "Alan", "Conceição", "Prosolina", "Eucy",
+    ];
+    const slug = (s: string) =>
+      s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase().split(/\s+/)[0].replace(/[^a-z]/g, "");
+    const results: Array<{ nome: string; email: string; ok: boolean; msg?: string }> = [];
+    for (const nome of nomes) {
+      const email = `${slug(nome)}@axis.com.br`;
+      try {
+        const { data: user, error: e1 } = await supabaseAdmin.auth.admin.createUser({
+          email, password: "axis1234", email_confirm: true,
+          user_metadata: { nome, force_password_change: true },
+        });
+        if (e1 || !user.user) throw new Error(e1?.message ?? "falha");
+        await supabaseAdmin.from("profiles").update({ nome }).eq("id", user.user.id);
+        await supabaseAdmin.from("user_roles").insert({ user_id: user.user.id, role: "aluno" });
+        const { error: e2 } = await supabaseAdmin.from("alunos").insert({ profile_id: user.user.id });
+        if (e2) throw e2;
+        results.push({ nome, email, ok: true });
+      } catch (err: any) {
+        results.push({ nome, email, ok: false, msg: err?.message ?? String(err) });
+      }
+    }
+    return { results };
+  });
+
 export const criarProfessor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
