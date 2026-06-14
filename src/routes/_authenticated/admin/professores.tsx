@@ -24,7 +24,14 @@ function ProfsAdmin() {
 
   const m = useMutation({
     mutationFn: () => fnNew({ data: form }),
-    onSuccess: () => { toast.success("Professor criado (senha axis1234)"); qc.invalidateQueries({ queryKey: ["admin-profs"] }); setOpen(false); },
+    onSuccess: (res: any) => {
+      toast.success("Professor criado", {
+        description: `Senha temporária: ${res?.tempPassword ?? "(enviada)"} — peça para o professor alterá-la no primeiro acesso.`,
+        duration: 15000,
+      });
+      qc.invalidateQueries({ queryKey: ["admin-profs"] });
+      setOpen(false);
+    },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
 
