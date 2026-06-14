@@ -39,6 +39,20 @@ function AlunosAdmin() {
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
 
+  const mSeed = useMutation({
+    mutationFn: () => fnSeed(),
+    onSuccess: (res: any) => {
+      const ok = res.results.filter((r: any) => r.ok).length;
+      const fail = res.results.length - ok;
+      toast.success(`Importação concluída: ${ok} criados, ${fail} falharam`, {
+        description: fail ? res.results.filter((r: any) => !r.ok).map((r: any) => `${r.nome}: ${r.msg}`).join(" · ") : "Senha padrão: axis1234",
+        duration: 20000,
+      });
+      qc.invalidateQueries({ queryKey: ["admin-alunos"] });
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+
   return (
     <div>
       <PageHeader title="Alunos" subtitle={`${data?.length ?? 0} alunos cadastrados`}
