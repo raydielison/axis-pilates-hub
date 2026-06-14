@@ -84,7 +84,10 @@ export const minhasReposicoes = createServerFn({ method: "GET" })
 export const solicitarReposicao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ data: z.string(), hora: z.string() }).parse(input),
+    z.object({
+      data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida (use AAAA-MM-DD)"),
+      hora: z.string().regex(/^\d{2}:\d{2}$/, "Hora inválida (use HH:MM)"),
+    }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const aluno = await getMyAluno(context.supabase, context.userId);
@@ -92,20 +95,22 @@ export const solicitarReposicao = createServerFn({ method: "POST" })
     if (aluno.status !== "ativo") throw new Error("Aluno suspenso não pode agendar reposições");
     if (aluno.saldo_reposicoes <= 0) throw new Error("Sem saldo de reposições");
     // Validar 24h
-    const dt = new Date(`${data.data}T${data.hora}`);
+    const dt = new Date(`${data.data}T${data.hora}:00`);
+    if (Number.isNaN(dt.getTime())) throw new Error("Data/hora inválida");
     if (dt.getTime() - Date.now() < 24 * 60 * 60 * 1000) {
       throw new Error("Reposições exigem 24h de antecedência");
     }
     // Validar vagas
-    const { count } = await context.supabase
+    const { count, error: eCount } = await context.supabase
       .from("presencas")
       .select("id", { count: "exact", head: true })
       .eq("data", data.data)
       .eq("hora", data.hora);
+    if (eCount) throw eCount;
     if ((count ?? 0) >= 4) throw new Error("Horário lotado");
 
     // Encontrar reposição pendente mais antiga
-    const { data: rep } = await context.supabase
+    const { data: rep, error: eRep } = await context.supabase
       .from("reposicoes")
       .select("id")
       .eq("aluno_id", aluno.id)
@@ -113,13 +118,19 @@ export const solicitarReposicao = createServerFn({ method: "POST" })
       .order("created_at")
       .limit(1)
       .maybeSingle();
+    if (eRep) throw eRep;
     if (!rep) throw new Error("Nenhum crédito disponível");
 
-    await context.supabase
+    const { error: eUpd } = await context.supabase
       .from("reposicoes")
       .update({ data_agendada: data.data, hora_agendada: data.hora })
       .eq("id", rep.id);
-    await context.supabase.from("alunos").update({ saldo_reposicoes: aluno.saldo_reposicoes - 1 }).eq("id", aluno.id);
+    if (eUpd) throw eUpd;
+    const { error: eDec } = await context.supabase
+      .from("alunos")
+      .update({ saldo_reposicoes: aluno.saldo_reposicoes - 1 })
+      .eq("id", aluno.id);
+    if (eDec) throw eDec;
     return { ok: true };
   });
 
