@@ -26,7 +26,15 @@ function AlunosAdmin() {
 
   const m = useMutation({
     mutationFn: () => fnNew({ data: { ...form, plano_id: form.plano_id || null } as any }),
-    onSuccess: () => { toast.success("Aluno criado (senha padrão axis1234)"); qc.invalidateQueries({ queryKey: ["admin-alunos"] }); setOpen(false); setForm({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "" }); },
+    onSuccess: (res: any) => {
+      toast.success("Aluno criado", {
+        description: `Senha temporária: ${res?.tempPassword ?? "(enviada)"} — peça para o aluno alterá-la no primeiro acesso.`,
+        duration: 15000,
+      });
+      qc.invalidateQueries({ queryKey: ["admin-alunos"] });
+      setOpen(false);
+      setForm({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "" });
+    },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
 
