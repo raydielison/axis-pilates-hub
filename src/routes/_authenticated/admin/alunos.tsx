@@ -18,6 +18,7 @@ function AlunosAdmin() {
   const fn = useServerFn(listarAlunosAdmin);
   const fnPlanos = useServerFn(listarPlanos);
   const fnNew = useServerFn(criarAluno);
+  const fnSeed = useServerFn(seedAlunosIniciais);
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["admin-alunos"], queryFn: () => fn() });
   const { data: planos } = useQuery({ queryKey: ["planos"], queryFn: () => fnPlanos() });
