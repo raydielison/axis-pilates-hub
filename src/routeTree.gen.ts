@@ -15,7 +15,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProfessorIndexRouteImport } from './routes/_authenticated/professor/index'
 import { Route as AuthenticatedAlunoIndexRouteImport } from './routes/_authenticated/aluno/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
-import { Route as ApiPublicBootstrapRouteImport } from './routes/api/public/bootstrap'
 import { Route as AuthenticatedProfessorPresencaRouteImport } from './routes/_authenticated/professor/presenca'
 import { Route as AuthenticatedProfessorObservacoesRouteImport } from './routes/_authenticated/professor/observacoes'
 import { Route as AuthenticatedProfessorAlunosRouteImport } from './routes/_authenticated/professor/alunos'
@@ -62,11 +61,6 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const ApiPublicBootstrapRoute = ApiPublicBootstrapRouteImport.update({
-  id: '/api/public/bootstrap',
-  path: '/api/public/bootstrap',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedProfessorPresencaRoute =
   AuthenticatedProfessorPresencaRouteImport.update({
@@ -184,7 +178,6 @@ export interface FileRoutesByFullPath {
   '/professor/alunos': typeof AuthenticatedProfessorAlunosRoute
   '/professor/observacoes': typeof AuthenticatedProfessorObservacoesRoute
   '/professor/presenca': typeof AuthenticatedProfessorPresencaRoute
-  '/api/public/bootstrap': typeof ApiPublicBootstrapRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/aluno/': typeof AuthenticatedAlunoIndexRoute
   '/professor/': typeof AuthenticatedProfessorIndexRoute
@@ -208,7 +201,6 @@ export interface FileRoutesByTo {
   '/professor/alunos': typeof AuthenticatedProfessorAlunosRoute
   '/professor/observacoes': typeof AuthenticatedProfessorObservacoesRoute
   '/professor/presenca': typeof AuthenticatedProfessorPresencaRoute
-  '/api/public/bootstrap': typeof ApiPublicBootstrapRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/aluno': typeof AuthenticatedAlunoIndexRoute
   '/professor': typeof AuthenticatedProfessorIndexRoute
@@ -234,7 +226,6 @@ export interface FileRoutesById {
   '/_authenticated/professor/alunos': typeof AuthenticatedProfessorAlunosRoute
   '/_authenticated/professor/observacoes': typeof AuthenticatedProfessorObservacoesRoute
   '/_authenticated/professor/presenca': typeof AuthenticatedProfessorPresencaRoute
-  '/api/public/bootstrap': typeof ApiPublicBootstrapRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/aluno/': typeof AuthenticatedAlunoIndexRoute
   '/_authenticated/professor/': typeof AuthenticatedProfessorIndexRoute
@@ -260,7 +251,6 @@ export interface FileRouteTypes {
     | '/professor/alunos'
     | '/professor/observacoes'
     | '/professor/presenca'
-    | '/api/public/bootstrap'
     | '/admin/'
     | '/aluno/'
     | '/professor/'
@@ -284,7 +274,6 @@ export interface FileRouteTypes {
     | '/professor/alunos'
     | '/professor/observacoes'
     | '/professor/presenca'
-    | '/api/public/bootstrap'
     | '/admin'
     | '/aluno'
     | '/professor'
@@ -309,7 +298,6 @@ export interface FileRouteTypes {
     | '/_authenticated/professor/alunos'
     | '/_authenticated/professor/observacoes'
     | '/_authenticated/professor/presenca'
-    | '/api/public/bootstrap'
     | '/_authenticated/admin/'
     | '/_authenticated/aluno/'
     | '/_authenticated/professor/'
@@ -319,7 +307,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
-  ApiPublicBootstrapRoute: typeof ApiPublicBootstrapRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -365,13 +352,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/api/public/bootstrap': {
-      id: '/api/public/bootstrap'
-      path: '/api/public/bootstrap'
-      fullPath: '/api/public/bootstrap'
-      preLoaderRoute: typeof ApiPublicBootstrapRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/professor/presenca': {
       id: '/_authenticated/professor/presenca'
@@ -540,7 +520,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
-  ApiPublicBootstrapRoute: ApiPublicBootstrapRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
