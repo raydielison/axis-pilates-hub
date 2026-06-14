@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { criarAluno, listarAlunosAdmin, listarPlanos } from "@/lib/admin.functions";
+import { criarAluno, listarAlunosAdmin, listarPlanos, seedAlunosIniciais } from "@/lib/admin.functions";
 import { PageHeader } from "@/components/ui-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
