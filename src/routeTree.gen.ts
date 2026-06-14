@@ -9,38 +9,167 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedAlunoIndexRouteImport } from './routes/_authenticated/aluno/index'
+import { Route as ApiPublicBootstrapRouteImport } from './routes/api/public/bootstrap'
+import { Route as AuthenticatedAlunoReposicoesRouteImport } from './routes/_authenticated/aluno/reposicoes'
+import { Route as AuthenticatedAlunoPresencasRouteImport } from './routes/_authenticated/aluno/presencas'
+import { Route as AuthenticatedAlunoPerfilRouteImport } from './routes/_authenticated/aluno/perfil'
+import { Route as AuthenticatedAlunoHorarioRouteImport } from './routes/_authenticated/aluno/horario'
+import { Route as AuthenticatedAlunoFinanceiroRouteImport } from './routes/_authenticated/aluno/financeiro'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAlunoIndexRoute = AuthenticatedAlunoIndexRouteImport.update({
+  id: '/aluno/',
+  path: '/aluno/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiPublicBootstrapRoute = ApiPublicBootstrapRouteImport.update({
+  id: '/api/public/bootstrap',
+  path: '/api/public/bootstrap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAlunoReposicoesRoute =
+  AuthenticatedAlunoReposicoesRouteImport.update({
+    id: '/aluno/reposicoes',
+    path: '/aluno/reposicoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAlunoPresencasRoute =
+  AuthenticatedAlunoPresencasRouteImport.update({
+    id: '/aluno/presencas',
+    path: '/aluno/presencas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAlunoPerfilRoute =
+  AuthenticatedAlunoPerfilRouteImport.update({
+    id: '/aluno/perfil',
+    path: '/aluno/perfil',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAlunoHorarioRoute =
+  AuthenticatedAlunoHorarioRouteImport.update({
+    id: '/aluno/horario',
+    path: '/aluno/horario',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAlunoFinanceiroRoute =
+  AuthenticatedAlunoFinanceiroRouteImport.update({
+    id: '/aluno/financeiro',
+    path: '/aluno/financeiro',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/aluno/financeiro': typeof AuthenticatedAlunoFinanceiroRoute
+  '/aluno/horario': typeof AuthenticatedAlunoHorarioRoute
+  '/aluno/perfil': typeof AuthenticatedAlunoPerfilRoute
+  '/aluno/presencas': typeof AuthenticatedAlunoPresencasRoute
+  '/aluno/reposicoes': typeof AuthenticatedAlunoReposicoesRoute
+  '/api/public/bootstrap': typeof ApiPublicBootstrapRoute
+  '/aluno/': typeof AuthenticatedAlunoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/aluno/financeiro': typeof AuthenticatedAlunoFinanceiroRoute
+  '/aluno/horario': typeof AuthenticatedAlunoHorarioRoute
+  '/aluno/perfil': typeof AuthenticatedAlunoPerfilRoute
+  '/aluno/presencas': typeof AuthenticatedAlunoPresencasRoute
+  '/aluno/reposicoes': typeof AuthenticatedAlunoReposicoesRoute
+  '/api/public/bootstrap': typeof ApiPublicBootstrapRoute
+  '/aluno': typeof AuthenticatedAlunoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/aluno/financeiro': typeof AuthenticatedAlunoFinanceiroRoute
+  '/_authenticated/aluno/horario': typeof AuthenticatedAlunoHorarioRoute
+  '/_authenticated/aluno/perfil': typeof AuthenticatedAlunoPerfilRoute
+  '/_authenticated/aluno/presencas': typeof AuthenticatedAlunoPresencasRoute
+  '/_authenticated/aluno/reposicoes': typeof AuthenticatedAlunoReposicoesRoute
+  '/api/public/bootstrap': typeof ApiPublicBootstrapRoute
+  '/_authenticated/aluno/': typeof AuthenticatedAlunoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/aluno/financeiro'
+    | '/aluno/horario'
+    | '/aluno/perfil'
+    | '/aluno/presencas'
+    | '/aluno/reposicoes'
+    | '/api/public/bootstrap'
+    | '/aluno/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/aluno/financeiro'
+    | '/aluno/horario'
+    | '/aluno/perfil'
+    | '/aluno/presencas'
+    | '/aluno/reposicoes'
+    | '/api/public/bootstrap'
+    | '/aluno'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/aluno/financeiro'
+    | '/_authenticated/aluno/horario'
+    | '/_authenticated/aluno/perfil'
+    | '/_authenticated/aluno/presencas'
+    | '/_authenticated/aluno/reposicoes'
+    | '/api/public/bootstrap'
+    | '/_authenticated/aluno/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ApiPublicBootstrapRoute: typeof ApiPublicBootstrapRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +177,84 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/aluno/': {
+      id: '/_authenticated/aluno/'
+      path: '/aluno'
+      fullPath: '/aluno/'
+      preLoaderRoute: typeof AuthenticatedAlunoIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/bootstrap': {
+      id: '/api/public/bootstrap'
+      path: '/api/public/bootstrap'
+      fullPath: '/api/public/bootstrap'
+      preLoaderRoute: typeof ApiPublicBootstrapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/aluno/reposicoes': {
+      id: '/_authenticated/aluno/reposicoes'
+      path: '/aluno/reposicoes'
+      fullPath: '/aluno/reposicoes'
+      preLoaderRoute: typeof AuthenticatedAlunoReposicoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/aluno/presencas': {
+      id: '/_authenticated/aluno/presencas'
+      path: '/aluno/presencas'
+      fullPath: '/aluno/presencas'
+      preLoaderRoute: typeof AuthenticatedAlunoPresencasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/aluno/perfil': {
+      id: '/_authenticated/aluno/perfil'
+      path: '/aluno/perfil'
+      fullPath: '/aluno/perfil'
+      preLoaderRoute: typeof AuthenticatedAlunoPerfilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/aluno/horario': {
+      id: '/_authenticated/aluno/horario'
+      path: '/aluno/horario'
+      fullPath: '/aluno/horario'
+      preLoaderRoute: typeof AuthenticatedAlunoHorarioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/aluno/financeiro': {
+      id: '/_authenticated/aluno/financeiro'
+      path: '/aluno/financeiro'
+      fullPath: '/aluno/financeiro'
+      preLoaderRoute: typeof AuthenticatedAlunoFinanceiroRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAlunoFinanceiroRoute: typeof AuthenticatedAlunoFinanceiroRoute
+  AuthenticatedAlunoHorarioRoute: typeof AuthenticatedAlunoHorarioRoute
+  AuthenticatedAlunoPerfilRoute: typeof AuthenticatedAlunoPerfilRoute
+  AuthenticatedAlunoPresencasRoute: typeof AuthenticatedAlunoPresencasRoute
+  AuthenticatedAlunoReposicoesRoute: typeof AuthenticatedAlunoReposicoesRoute
+  AuthenticatedAlunoIndexRoute: typeof AuthenticatedAlunoIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAlunoFinanceiroRoute: AuthenticatedAlunoFinanceiroRoute,
+  AuthenticatedAlunoHorarioRoute: AuthenticatedAlunoHorarioRoute,
+  AuthenticatedAlunoPerfilRoute: AuthenticatedAlunoPerfilRoute,
+  AuthenticatedAlunoPresencasRoute: AuthenticatedAlunoPresencasRoute,
+  AuthenticatedAlunoReposicoesRoute: AuthenticatedAlunoReposicoesRoute,
+  AuthenticatedAlunoIndexRoute: AuthenticatedAlunoIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ApiPublicBootstrapRoute: ApiPublicBootstrapRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
