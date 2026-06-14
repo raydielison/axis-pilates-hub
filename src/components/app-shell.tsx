@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
+import logoDark from "@/assets/axis-logo-dark.asset.json";
+import logoLight from "@/assets/axis-logo-light.asset.json";
 
 type Role = "admin" | "professor" | "aluno";
 type NavItem = { to: string; label: string; icon: typeof Home; bottom?: boolean };
@@ -64,10 +66,10 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
         <div className="px-5 py-6 flex items-center gap-3 border-b border-sidebar-border">
-          <img src="/icon-512.png" alt="AXIS" width={40} height={40} className="rounded-xl" />
+          <img src={logoDark.url} alt="AXIS" width={44} height={44} className="rounded-xl" />
           <div className="min-w-0">
             <p className="font-display font-bold text-sm leading-tight">AXIS PILATES</p>
-            <p className="text-[10px] uppercase tracking-widest text-orange-400">Colégio Batista</p>
+            <p className="text-[10px] uppercase tracking-widest text-primary">Colégio Batista</p>
           </div>
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
@@ -84,7 +86,7 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
                   active
-                    ? "bg-orange-500 text-white font-medium"
+                    ? "bg-primary text-primary-foreground font-medium"
                     : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
               >
@@ -106,10 +108,10 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
         {/* Mobile header */}
         <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-border bg-background sticky top-0 z-30">
           <div className="flex items-center gap-2 min-w-0">
-            <img src="/icon-512.png" alt="AXIS" width={28} height={28} className="rounded-lg" />
+            <img src={logoLight.url} alt="AXIS" width={32} height={32} className="rounded-lg" />
             <div className="min-w-0">
               <p className="font-display font-bold text-sm leading-none truncate">AXIS PILATES</p>
-              <p className="text-[9px] uppercase tracking-widest text-orange-500">{ROLE_LABEL[role]}</p>
+              <p className="text-[9px] uppercase tracking-widest text-primary">{ROLE_LABEL[role]}</p>
             </div>
           </div>
           <Button onClick={handleLogout} size="icon" variant="ghost"><LogOut className="h-4 w-4" /></Button>
@@ -131,7 +133,7 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
                   to={it.to}
                   className={cn(
                     "flex flex-col items-center justify-center gap-1 text-[10px] transition-colors",
-                    active ? "text-orange-500 font-semibold" : "text-muted-foreground",
+                    active ? "text-primary font-semibold" : "text-muted-foreground",
                   )}
                 >
                   <Icon className={cn("h-5 w-5", active && "scale-110")} />

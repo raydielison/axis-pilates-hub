@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import logoDark from "@/assets/axis-logo-dark.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Entrar — AXIS PILATES" }] }),
@@ -54,11 +55,11 @@ function AuthPage() {
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
           <div className="flex flex-col items-center mb-8">
-            <img src="/icon-512.png" alt="AXIS Pilates" width={72} height={72} className="rounded-2xl shadow-2xl" />
+            <img src={logoDark.url} alt="AXIS Pilates" width={180} height={180} className="rounded-2xl shadow-2xl" />
             <h1 className="mt-5 font-display text-2xl font-bold tracking-tight text-center">
               AXIS PILATES
             </h1>
-            <p className="text-xs uppercase tracking-[0.3em] text-orange-400 mt-1">Colégio Batista</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-primary mt-1">Colégio Batista</p>
           </div>
 
           <Card className="p-6 bg-zinc-900 border-zinc-800 text-white">
