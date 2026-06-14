@@ -136,8 +136,10 @@ export const criarAluno = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const tempPassword = `Axis-${crypto.randomUUID().slice(0, 12)}`;
     const { data: user, error: e1 } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email, password: "axis1234", email_confirm: true, user_metadata: { nome: data.nome },
+      email: data.email, password: tempPassword, email_confirm: true,
+      user_metadata: { nome: data.nome, force_password_change: true },
     });
     if (e1 || !user.user) throw new Error(e1?.message ?? "Falha ao criar usuário");
     await supabaseAdmin.from("profiles").update({
@@ -148,7 +150,7 @@ export const criarAluno = createServerFn({ method: "POST" })
       profile_id: user.user.id, cpf: data.cpf, plano_id: data.plano_id ?? null,
     });
     if (e2) throw e2;
-    return { ok: true };
+    return { ok: true, tempPassword };
   });
 
 export const criarProfessor = createServerFn({ method: "POST" })
@@ -164,14 +166,16 @@ export const criarProfessor = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const tempPassword = `Axis-${crypto.randomUUID().slice(0, 12)}`;
     const { data: user, error: e1 } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email, password: "axis1234", email_confirm: true, user_metadata: { nome: data.nome },
+      email: data.email, password: tempPassword, email_confirm: true,
+      user_metadata: { nome: data.nome, force_password_change: true },
     });
     if (e1 || !user.user) throw new Error(e1?.message ?? "Falha ao criar usuário");
     await supabaseAdmin.from("profiles").update({ nome: data.nome, telefone: data.telefone }).eq("id", user.user.id);
     await supabaseAdmin.from("user_roles").insert({ user_id: user.user.id, role: "professor" });
     await supabaseAdmin.from("professores").insert({ profile_id: user.user.id, turno: data.turno });
-    return { ok: true };
+    return { ok: true, tempPassword };
   });
 
 export const suspenderInadimplentes = createServerFn({ method: "POST" })
