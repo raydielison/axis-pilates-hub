@@ -64,7 +64,7 @@ function AlunosAdmin() {
                   </Select>
                 </div>
                 <Button className="w-full bg-primary hover:bg-primary/90" disabled={m.isPending} onClick={() => m.mutate()}>
-                  {m.isPending ? "Criando…" : "Criar (senha: axis1234)"}
+                  {m.isPending ? "Criando…" : "Criar aluno"}
                 </Button>
               </div>
             </DialogContent>
