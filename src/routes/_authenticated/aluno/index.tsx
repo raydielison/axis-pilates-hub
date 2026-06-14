@@ -38,7 +38,7 @@ function AlunoDashboard() {
       <div className="grid md:grid-cols-2 gap-4 mt-6">
         <div className="rounded-2xl border bg-card p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Wallet className="h-4 w-4 text-orange-500" />
+            <Wallet className="h-4 w-4 text-primary" />
             <h2 className="font-display font-semibold">Situação financeira</h2>
           </div>
           {pag ? (
@@ -59,13 +59,13 @@ function AlunoDashboard() {
 
         <div className="rounded-2xl border bg-card p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Bell className="h-4 w-4 text-orange-500" />
+            <Bell className="h-4 w-4 text-primary" />
             <h2 className="font-display font-semibold">Avisos</h2>
           </div>
           {avisos.length === 0 && <p className="text-muted-foreground text-sm">Sem avisos no momento.</p>}
           <ul className="space-y-3">
             {avisos.map((a) => (
-              <li key={a.id} className="border-l-2 border-orange-500 pl-3">
+              <li key={a.id} className="border-l-2 border-primary pl-3">
                 <p className="text-sm font-medium">{a.titulo}</p>
                 <p className="text-xs text-muted-foreground">{a.mensagem}</p>
               </li>

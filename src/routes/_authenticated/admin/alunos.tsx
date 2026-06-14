@@ -35,7 +35,7 @@ function AlunosAdmin() {
       <PageHeader title="Alunos" subtitle={`${data?.length ?? 0} alunos cadastrados`}
         action={
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button className="bg-orange-500 hover:bg-orange-600"><Plus className="h-4 w-4 mr-1" />Novo</Button></DialogTrigger>
+            <DialogTrigger asChild><Button className="bg-primary hover:bg-primary/90"><Plus className="h-4 w-4 mr-1" />Novo</Button></DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Cadastrar aluno</DialogTitle></DialogHeader>
               <div className="space-y-3">
@@ -55,7 +55,7 @@ function AlunosAdmin() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button className="w-full bg-orange-500 hover:bg-orange-600" disabled={m.isPending} onClick={() => m.mutate()}>
+                <Button className="w-full bg-primary hover:bg-primary/90" disabled={m.isPending} onClick={() => m.mutate()}>
                   {m.isPending ? "Criando…" : "Criar (senha: axis1234)"}
                 </Button>
               </div>

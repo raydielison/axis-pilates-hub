@@ -24,7 +24,7 @@ function Dash() {
           {(data?.aulasHoje ?? []).map((a: any, i: number) => (
             <li key={i} className="py-2.5 flex justify-between">
               <span>{a.aluno?.profile?.nome ?? "—"}</span>
-              <span className="font-display font-bold text-orange-500">{String(a.hora).slice(0, 5)}</span>
+              <span className="font-display font-bold text-primary">{String(a.hora).slice(0, 5)}</span>
             </li>
           ))}
         </ul>

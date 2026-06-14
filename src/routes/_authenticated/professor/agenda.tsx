@@ -39,8 +39,8 @@ function Agenda() {
                   return (
                     <td key={i} className="p-2 align-top">
                       {arr.length > 0 ? (
-                        <div className="rounded-lg bg-orange-500/10 border border-orange-500/30 p-1.5">
-                          <p className="text-[10px] uppercase text-orange-700">{arr.length}/4</p>
+                        <div className="rounded-lg bg-primary/10 border border-primary/30 p-1.5">
+                          <p className="text-[10px] uppercase text-primary">{arr.length}/4</p>
                           {arr.slice(0, 2).map((a: any, j: number) => (
                             <p key={j} className="truncate text-[11px]">{a.aluno?.profile?.nome}</p>
                           ))}

@@ -44,7 +44,7 @@ function PlanoCard({ plano, onSave }: { plano: any; onSave: (v: any) => void }) 
         <div><Label>Freq. semanal</Label><Input type="number" min={1} max={7} value={freq} onChange={(e) => setFreq(Number(e.target.value))} /></div>
         <div><Label>Valor (R$)</Label><Input type="number" step="0.01" value={valor} onChange={(e) => setValor(Number(e.target.value))} /></div>
       </div>
-      <Button className="bg-orange-500 hover:bg-orange-600" onClick={() => onSave({ nome, frequencia_semanal: freq, valor })}>Salvar</Button>
+      <Button className="bg-primary hover:bg-primary/90" onClick={() => onSave({ nome, frequencia_semanal: freq, valor })}>Salvar</Button>
     </div>
   );
 }

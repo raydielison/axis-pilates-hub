@@ -41,7 +41,7 @@ function Obs() {
         </Select>
         <Textarea className="mt-3" rows={4} value={texto} onChange={(e) => setTexto(e.target.value)}
           placeholder="Escreva a evolução, lesões, recomendações..." />
-        <Button className="mt-3 bg-orange-500 hover:bg-orange-600" onClick={() => m.mutate()} disabled={!alunoId || !texto || m.isPending}>
+        <Button className="mt-3 bg-primary hover:bg-primary/90" onClick={() => m.mutate()} disabled={!alunoId || !texto || m.isPending}>
           {m.isPending ? "Salvando…" : "Salvar observação"}
         </Button>
       </div>
