@@ -19,7 +19,6 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [seeding, setSeeding] = useState(false);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -32,22 +31,6 @@ function AuthPage() {
     }
     toast.success("Bem-vindo!");
     navigate({ to: "/" });
-  }
-
-  async function handleSeed() {
-    setSeeding(true);
-    try {
-      const res = await fetch("/api/public/bootstrap", { method: "POST" });
-      const data = (await res.json()) as { ok?: boolean; created?: number; error?: string };
-      if (!res.ok) throw new Error(data.error || "Falha");
-      toast.success("Dados de demonstração criados!", {
-        description: `${data.created ?? 0} usuários criados. Use a senha padrão axis1234.`,
-      });
-    } catch (err) {
-      toast.error("Erro ao criar dados", { description: (err as Error).message });
-    } finally {
-      setSeeding(false);
-    }
   }
 
   return (
@@ -83,17 +66,6 @@ function AuthPage() {
 
           <div className="mt-6 text-center text-xs text-zinc-500">
             <p>Não tem cadastro? Procure a administração do estúdio.</p>
-            <button
-              type="button"
-              onClick={handleSeed}
-              disabled={seeding}
-              className="mt-3 text-primary hover:text-primary/80 underline underline-offset-4"
-            >
-              {seeding ? "Criando dados de demonstração..." : "Criar dados de demonstração"}
-            </button>
-            <p className="mt-2 text-[10px] text-zinc-600">
-              Usuários demo: admin@axispilates.com · prof1@axispilates.com · aluno1@axispilates.com (senha: axis1234)
-            </p>
           </div>
         </div>
       </div>
