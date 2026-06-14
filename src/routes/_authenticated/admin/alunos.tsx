@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { criarAluno, listarAlunosAdmin, listarPlanos } from "@/lib/admin.functions";
+import { criarAluno, listarAlunosAdmin, listarPlanos, seedAlunosIniciais } from "@/lib/admin.functions";
 import { PageHeader } from "@/components/ui-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ function AlunosAdmin() {
   const fn = useServerFn(listarAlunosAdmin);
   const fnPlanos = useServerFn(listarPlanos);
   const fnNew = useServerFn(criarAluno);
+  const fnSeed = useServerFn(seedAlunosIniciais);
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["admin-alunos"], queryFn: () => fn() });
   const { data: planos } = useQuery({ queryKey: ["planos"], queryFn: () => fnPlanos() });
@@ -38,10 +39,28 @@ function AlunosAdmin() {
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
 
+  const mSeed = useMutation({
+    mutationFn: () => fnSeed(),
+    onSuccess: (res: any) => {
+      const ok = res.results.filter((r: any) => r.ok).length;
+      const fail = res.results.length - ok;
+      toast.success(`Importação concluída: ${ok} criados, ${fail} falharam`, {
+        description: fail ? res.results.filter((r: any) => !r.ok).map((r: any) => `${r.nome}: ${r.msg}`).join(" · ") : "Senha padrão: axis1234",
+        duration: 20000,
+      });
+      qc.invalidateQueries({ queryKey: ["admin-alunos"] });
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+
   return (
     <div>
       <PageHeader title="Alunos" subtitle={`${data?.length ?? 0} alunos cadastrados`}
         action={
+          <div className="flex gap-2">
+            <Button variant="outline" disabled={mSeed.isPending} onClick={() => mSeed.mutate()}>
+              {mSeed.isPending ? "Importando…" : "Importar lista inicial"}
+            </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button className="bg-primary hover:bg-primary/90"><Plus className="h-4 w-4 mr-1" />Novo</Button></DialogTrigger>
             <DialogContent>
@@ -69,7 +88,9 @@ function AlunosAdmin() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         } />
+
 
       <div className="rounded-2xl border bg-card overflow-x-auto">
         <table className="w-full text-sm">
