@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProfessorIndexRouteImport } from './routes/_authenticated/professor/index'
 import { Route as AuthenticatedAlunoIndexRouteImport } from './routes/_authenticated/aluno/index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as ApiPublicBootstrapRouteImport } from './routes/api/public/bootstrap'
 import { Route as AuthenticatedProfessorPresencaRouteImport } from './routes/_authenticated/professor/presenca'
 import { Route as AuthenticatedProfessorObservacoesRouteImport } from './routes/_authenticated/professor/observacoes'
@@ -24,6 +25,13 @@ import { Route as AuthenticatedAlunoPresencasRouteImport } from './routes/_authe
 import { Route as AuthenticatedAlunoPerfilRouteImport } from './routes/_authenticated/aluno/perfil'
 import { Route as AuthenticatedAlunoHorarioRouteImport } from './routes/_authenticated/aluno/horario'
 import { Route as AuthenticatedAlunoFinanceiroRouteImport } from './routes/_authenticated/aluno/financeiro'
+import { Route as AuthenticatedAdminRelatoriosRouteImport } from './routes/_authenticated/admin/relatorios'
+import { Route as AuthenticatedAdminProfessoresRouteImport } from './routes/_authenticated/admin/professores'
+import { Route as AuthenticatedAdminPlanosRouteImport } from './routes/_authenticated/admin/planos'
+import { Route as AuthenticatedAdminFinanceiroRouteImport } from './routes/_authenticated/admin/financeiro'
+import { Route as AuthenticatedAdminConfiguracoesRouteImport } from './routes/_authenticated/admin/configuracoes'
+import { Route as AuthenticatedAdminAlunosRouteImport } from './routes/_authenticated/admin/alunos'
+import { Route as AuthenticatedAdminAgendaRouteImport } from './routes/_authenticated/admin/agenda'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -48,6 +56,11 @@ const AuthenticatedProfessorIndexRoute =
 const AuthenticatedAlunoIndexRoute = AuthenticatedAlunoIndexRouteImport.update({
   id: '/aluno/',
   path: '/aluno/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiPublicBootstrapRoute = ApiPublicBootstrapRouteImport.update({
@@ -109,10 +122,59 @@ const AuthenticatedAlunoFinanceiroRoute =
     path: '/aluno/financeiro',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminRelatoriosRoute =
+  AuthenticatedAdminRelatoriosRouteImport.update({
+    id: '/admin/relatorios',
+    path: '/admin/relatorios',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminProfessoresRoute =
+  AuthenticatedAdminProfessoresRouteImport.update({
+    id: '/admin/professores',
+    path: '/admin/professores',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminPlanosRoute =
+  AuthenticatedAdminPlanosRouteImport.update({
+    id: '/admin/planos',
+    path: '/admin/planos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminFinanceiroRoute =
+  AuthenticatedAdminFinanceiroRouteImport.update({
+    id: '/admin/financeiro',
+    path: '/admin/financeiro',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminConfiguracoesRoute =
+  AuthenticatedAdminConfiguracoesRouteImport.update({
+    id: '/admin/configuracoes',
+    path: '/admin/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminAlunosRoute =
+  AuthenticatedAdminAlunosRouteImport.update({
+    id: '/admin/alunos',
+    path: '/admin/alunos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminAgendaRoute =
+  AuthenticatedAdminAgendaRouteImport.update({
+    id: '/admin/agenda',
+    path: '/admin/agenda',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/admin/agenda': typeof AuthenticatedAdminAgendaRoute
+  '/admin/alunos': typeof AuthenticatedAdminAlunosRoute
+  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
+  '/admin/financeiro': typeof AuthenticatedAdminFinanceiroRoute
+  '/admin/planos': typeof AuthenticatedAdminPlanosRoute
+  '/admin/professores': typeof AuthenticatedAdminProfessoresRoute
+  '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/aluno/financeiro': typeof AuthenticatedAlunoFinanceiroRoute
   '/aluno/horario': typeof AuthenticatedAlunoHorarioRoute
   '/aluno/perfil': typeof AuthenticatedAlunoPerfilRoute
@@ -123,12 +185,20 @@ export interface FileRoutesByFullPath {
   '/professor/observacoes': typeof AuthenticatedProfessorObservacoesRoute
   '/professor/presenca': typeof AuthenticatedProfessorPresencaRoute
   '/api/public/bootstrap': typeof ApiPublicBootstrapRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/aluno/': typeof AuthenticatedAlunoIndexRoute
   '/professor/': typeof AuthenticatedProfessorIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/admin/agenda': typeof AuthenticatedAdminAgendaRoute
+  '/admin/alunos': typeof AuthenticatedAdminAlunosRoute
+  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
+  '/admin/financeiro': typeof AuthenticatedAdminFinanceiroRoute
+  '/admin/planos': typeof AuthenticatedAdminPlanosRoute
+  '/admin/professores': typeof AuthenticatedAdminProfessoresRoute
+  '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/aluno/financeiro': typeof AuthenticatedAlunoFinanceiroRoute
   '/aluno/horario': typeof AuthenticatedAlunoHorarioRoute
   '/aluno/perfil': typeof AuthenticatedAlunoPerfilRoute
@@ -139,6 +209,7 @@ export interface FileRoutesByTo {
   '/professor/observacoes': typeof AuthenticatedProfessorObservacoesRoute
   '/professor/presenca': typeof AuthenticatedProfessorPresencaRoute
   '/api/public/bootstrap': typeof ApiPublicBootstrapRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/aluno': typeof AuthenticatedAlunoIndexRoute
   '/professor': typeof AuthenticatedProfessorIndexRoute
 }
@@ -147,6 +218,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/admin/agenda': typeof AuthenticatedAdminAgendaRoute
+  '/_authenticated/admin/alunos': typeof AuthenticatedAdminAlunosRoute
+  '/_authenticated/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
+  '/_authenticated/admin/financeiro': typeof AuthenticatedAdminFinanceiroRoute
+  '/_authenticated/admin/planos': typeof AuthenticatedAdminPlanosRoute
+  '/_authenticated/admin/professores': typeof AuthenticatedAdminProfessoresRoute
+  '/_authenticated/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/_authenticated/aluno/financeiro': typeof AuthenticatedAlunoFinanceiroRoute
   '/_authenticated/aluno/horario': typeof AuthenticatedAlunoHorarioRoute
   '/_authenticated/aluno/perfil': typeof AuthenticatedAlunoPerfilRoute
@@ -157,6 +235,7 @@ export interface FileRoutesById {
   '/_authenticated/professor/observacoes': typeof AuthenticatedProfessorObservacoesRoute
   '/_authenticated/professor/presenca': typeof AuthenticatedProfessorPresencaRoute
   '/api/public/bootstrap': typeof ApiPublicBootstrapRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/aluno/': typeof AuthenticatedAlunoIndexRoute
   '/_authenticated/professor/': typeof AuthenticatedProfessorIndexRoute
 }
@@ -165,6 +244,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/admin/agenda'
+    | '/admin/alunos'
+    | '/admin/configuracoes'
+    | '/admin/financeiro'
+    | '/admin/planos'
+    | '/admin/professores'
+    | '/admin/relatorios'
     | '/aluno/financeiro'
     | '/aluno/horario'
     | '/aluno/perfil'
@@ -175,12 +261,20 @@ export interface FileRouteTypes {
     | '/professor/observacoes'
     | '/professor/presenca'
     | '/api/public/bootstrap'
+    | '/admin/'
     | '/aluno/'
     | '/professor/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/admin/agenda'
+    | '/admin/alunos'
+    | '/admin/configuracoes'
+    | '/admin/financeiro'
+    | '/admin/planos'
+    | '/admin/professores'
+    | '/admin/relatorios'
     | '/aluno/financeiro'
     | '/aluno/horario'
     | '/aluno/perfil'
@@ -191,6 +285,7 @@ export interface FileRouteTypes {
     | '/professor/observacoes'
     | '/professor/presenca'
     | '/api/public/bootstrap'
+    | '/admin'
     | '/aluno'
     | '/professor'
   id:
@@ -198,6 +293,13 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/admin/agenda'
+    | '/_authenticated/admin/alunos'
+    | '/_authenticated/admin/configuracoes'
+    | '/_authenticated/admin/financeiro'
+    | '/_authenticated/admin/planos'
+    | '/_authenticated/admin/professores'
+    | '/_authenticated/admin/relatorios'
     | '/_authenticated/aluno/financeiro'
     | '/_authenticated/aluno/horario'
     | '/_authenticated/aluno/perfil'
@@ -208,6 +310,7 @@ export interface FileRouteTypes {
     | '/_authenticated/professor/observacoes'
     | '/_authenticated/professor/presenca'
     | '/api/public/bootstrap'
+    | '/_authenticated/admin/'
     | '/_authenticated/aluno/'
     | '/_authenticated/professor/'
   fileRoutesById: FileRoutesById
@@ -254,6 +357,13 @@ declare module '@tanstack/react-router' {
       path: '/aluno'
       fullPath: '/aluno/'
       preLoaderRoute: typeof AuthenticatedAlunoIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/bootstrap': {
@@ -326,10 +436,66 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAlunoFinanceiroRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/relatorios': {
+      id: '/_authenticated/admin/relatorios'
+      path: '/admin/relatorios'
+      fullPath: '/admin/relatorios'
+      preLoaderRoute: typeof AuthenticatedAdminRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/professores': {
+      id: '/_authenticated/admin/professores'
+      path: '/admin/professores'
+      fullPath: '/admin/professores'
+      preLoaderRoute: typeof AuthenticatedAdminProfessoresRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/planos': {
+      id: '/_authenticated/admin/planos'
+      path: '/admin/planos'
+      fullPath: '/admin/planos'
+      preLoaderRoute: typeof AuthenticatedAdminPlanosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/financeiro': {
+      id: '/_authenticated/admin/financeiro'
+      path: '/admin/financeiro'
+      fullPath: '/admin/financeiro'
+      preLoaderRoute: typeof AuthenticatedAdminFinanceiroRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/configuracoes': {
+      id: '/_authenticated/admin/configuracoes'
+      path: '/admin/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AuthenticatedAdminConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/alunos': {
+      id: '/_authenticated/admin/alunos'
+      path: '/admin/alunos'
+      fullPath: '/admin/alunos'
+      preLoaderRoute: typeof AuthenticatedAdminAlunosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/agenda': {
+      id: '/_authenticated/admin/agenda'
+      path: '/admin/agenda'
+      fullPath: '/admin/agenda'
+      preLoaderRoute: typeof AuthenticatedAdminAgendaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminAgendaRoute: typeof AuthenticatedAdminAgendaRoute
+  AuthenticatedAdminAlunosRoute: typeof AuthenticatedAdminAlunosRoute
+  AuthenticatedAdminConfiguracoesRoute: typeof AuthenticatedAdminConfiguracoesRoute
+  AuthenticatedAdminFinanceiroRoute: typeof AuthenticatedAdminFinanceiroRoute
+  AuthenticatedAdminPlanosRoute: typeof AuthenticatedAdminPlanosRoute
+  AuthenticatedAdminProfessoresRoute: typeof AuthenticatedAdminProfessoresRoute
+  AuthenticatedAdminRelatoriosRoute: typeof AuthenticatedAdminRelatoriosRoute
   AuthenticatedAlunoFinanceiroRoute: typeof AuthenticatedAlunoFinanceiroRoute
   AuthenticatedAlunoHorarioRoute: typeof AuthenticatedAlunoHorarioRoute
   AuthenticatedAlunoPerfilRoute: typeof AuthenticatedAlunoPerfilRoute
@@ -339,11 +505,19 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfessorAlunosRoute: typeof AuthenticatedProfessorAlunosRoute
   AuthenticatedProfessorObservacoesRoute: typeof AuthenticatedProfessorObservacoesRoute
   AuthenticatedProfessorPresencaRoute: typeof AuthenticatedProfessorPresencaRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAlunoIndexRoute: typeof AuthenticatedAlunoIndexRoute
   AuthenticatedProfessorIndexRoute: typeof AuthenticatedProfessorIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminAgendaRoute: AuthenticatedAdminAgendaRoute,
+  AuthenticatedAdminAlunosRoute: AuthenticatedAdminAlunosRoute,
+  AuthenticatedAdminConfiguracoesRoute: AuthenticatedAdminConfiguracoesRoute,
+  AuthenticatedAdminFinanceiroRoute: AuthenticatedAdminFinanceiroRoute,
+  AuthenticatedAdminPlanosRoute: AuthenticatedAdminPlanosRoute,
+  AuthenticatedAdminProfessoresRoute: AuthenticatedAdminProfessoresRoute,
+  AuthenticatedAdminRelatoriosRoute: AuthenticatedAdminRelatoriosRoute,
   AuthenticatedAlunoFinanceiroRoute: AuthenticatedAlunoFinanceiroRoute,
   AuthenticatedAlunoHorarioRoute: AuthenticatedAlunoHorarioRoute,
   AuthenticatedAlunoPerfilRoute: AuthenticatedAlunoPerfilRoute,
@@ -354,6 +528,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfessorObservacoesRoute:
     AuthenticatedProfessorObservacoesRoute,
   AuthenticatedProfessorPresencaRoute: AuthenticatedProfessorPresencaRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAlunoIndexRoute: AuthenticatedAlunoIndexRoute,
   AuthenticatedProfessorIndexRoute: AuthenticatedProfessorIndexRoute,
 }
