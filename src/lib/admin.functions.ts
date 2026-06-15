@@ -36,7 +36,20 @@ export const listarAlunosAdmin = createServerFn({ method: "GET" })
     const { data } = await context.supabase
       .from("alunos")
       .select("*, plano:planos(*), profile:profiles(*)")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
+    return data ?? [];
+  });
+
+export const listarAlunosExcluidos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("alunos")
+      .select("*, plano:planos(*), profile:profiles(*)")
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false });
     return data ?? [];
   });
 
@@ -187,6 +200,7 @@ export const seedAlunosIniciais = createServerFn({ method: "POST" })
     return { results };
   });
 
+// Soft delete: marca como excluído e bloqueia login (ban longo). Dados são preservados.
 export const excluirAluno = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -199,19 +213,172 @@ export const excluirAluno = createServerFn({ method: "POST" })
       .from("alunos").select("profile_id").eq("id", data.aluno_id).maybeSingle();
     if (e0) throw e0;
     if (!aluno) throw new Error("Aluno não encontrado");
-    const profileId = aluno.profile_id;
-    // Limpa dependências e o aluno; auth.users -> profiles devem cascatear via FK
-    await supabaseAdmin.from("horarios_fixos").delete().eq("aluno_id", data.aluno_id);
-    await supabaseAdmin.from("presencas").delete().eq("aluno_id", data.aluno_id);
-    await supabaseAdmin.from("reposicoes").delete().eq("aluno_id", data.aluno_id);
-    await supabaseAdmin.from("pagamentos").delete().eq("aluno_id", data.aluno_id);
-    await supabaseAdmin.from("observacoes_aluno").delete().eq("aluno_id", data.aluno_id);
-    const { error: e1 } = await supabaseAdmin.from("alunos").delete().eq("id", data.aluno_id);
+    const { error: e1 } = await supabaseAdmin
+      .from("alunos")
+      .update({ status: "excluido", deleted_at: new Date().toISOString(), deleted_by: context.userId })
+      .eq("id", data.aluno_id);
     if (e1) throw e1;
-    await supabaseAdmin.from("user_roles").delete().eq("user_id", profileId);
-    const { error: e2 } = await supabaseAdmin.auth.admin.deleteUser(profileId);
-    if (e2) throw e2;
+    await supabaseAdmin.auth.admin.updateUserById(aluno.profile_id, { ban_duration: "876000h" } as any);
     return { ok: true };
+  });
+
+export const reativarAluno = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      aluno_id: z.string().uuid(),
+      status: z.enum(["ativo", "suspenso", "cancelado"]).default("ativo"),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: aluno, error: e0 } = await supabaseAdmin
+      .from("alunos").select("profile_id").eq("id", data.aluno_id).maybeSingle();
+    if (e0) throw e0;
+    if (!aluno) throw new Error("Aluno não encontrado");
+    const { error: e1 } = await supabaseAdmin
+      .from("alunos")
+      .update({ status: data.status, deleted_at: null, deleted_by: null })
+      .eq("id", data.aluno_id);
+    if (e1) throw e1;
+    await supabaseAdmin.auth.admin.updateUserById(aluno.profile_id, { ban_duration: "none" } as any);
+    return { ok: true };
+  });
+
+export const atualizarAluno = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      aluno_id: z.string().uuid(),
+      nome: z.string().min(1).max(120).optional(),
+      email: z.string().email().max(160).optional(),
+      telefone: z.string().max(20).optional().nullable(),
+      endereco: z.string().max(200).optional().nullable(),
+      contato_emergencia: z.string().max(120).optional().nullable(),
+      cpf: z.string().max(20).optional().nullable(),
+      plano_id: z.string().uuid().optional().nullable(),
+      status: z.enum(["ativo", "suspenso", "cancelado"]).optional(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: aluno, error: e0 } = await supabaseAdmin
+      .from("alunos").select("profile_id").eq("id", data.aluno_id).maybeSingle();
+    if (e0) throw e0;
+    if (!aluno) throw new Error("Aluno não encontrado");
+
+    const profilePatch: Record<string, any> = {};
+    if (data.nome !== undefined) profilePatch.nome = data.nome;
+    if (data.email !== undefined) profilePatch.email = data.email;
+    if (data.telefone !== undefined) profilePatch.telefone = data.telefone;
+    if (data.endereco !== undefined) profilePatch.endereco = data.endereco;
+    if (data.contato_emergencia !== undefined) profilePatch.contato_emergencia = data.contato_emergencia;
+    if (Object.keys(profilePatch).length) {
+      const { error: ep } = await supabaseAdmin.from("profiles").update(profilePatch).eq("id", aluno.profile_id);
+      if (ep) throw ep;
+    }
+    if (data.email !== undefined) {
+      await supabaseAdmin.auth.admin.updateUserById(aluno.profile_id, { email: data.email });
+    }
+
+    const alunoPatch: Record<string, any> = {};
+    if (data.cpf !== undefined) alunoPatch.cpf = data.cpf;
+    if (data.plano_id !== undefined) alunoPatch.plano_id = data.plano_id;
+    if (data.status !== undefined) alunoPatch.status = data.status;
+    if (Object.keys(alunoPatch).length) {
+      const { error: ea } = await supabaseAdmin.from("alunos").update(alunoPatch).eq("id", data.aluno_id);
+      if (ea) throw ea;
+    }
+    return { ok: true };
+  });
+
+// ============ Anexos do aluno (admin) ============
+export const listarAnexosAluno = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ aluno_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: rows, error } = await context.supabase
+      .from("aluno_anexos").select("*").eq("aluno_id", data.aluno_id)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return rows ?? [];
+  });
+
+export const uploadAnexoAluno = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      aluno_id: z.string().uuid(),
+      file_name: z.string().min(1).max(200),
+      mime_type: z.string().max(120).optional().nullable(),
+      file_b64: z.string().min(1),
+      descricao: z.string().max(300).optional().nullable(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const bin = Uint8Array.from(atob(data.file_b64), (c) => c.charCodeAt(0));
+    if (bin.byteLength > 25 * 1024 * 1024) throw new Error("Arquivo acima de 25MB");
+    const safe = data.file_name.replace(/[^\w.\-]+/g, "_");
+    const path = `${data.aluno_id}/${Date.now()}_${safe}`;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: eUp } = await supabaseAdmin.storage.from("aluno-anexos").upload(path, bin, {
+      contentType: data.mime_type || "application/octet-stream",
+      upsert: false,
+    });
+    if (eUp) throw eUp;
+    const { error: eIns } = await supabaseAdmin.from("aluno_anexos").insert({
+      aluno_id: data.aluno_id,
+      file_path: path,
+      file_name: data.file_name,
+      mime_type: data.mime_type ?? null,
+      size_bytes: bin.byteLength,
+      uploaded_by: context.userId,
+      descricao: data.descricao ?? null,
+    });
+    if (eIns) throw eIns;
+    return { ok: true };
+  });
+
+export const excluirAnexoAluno = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ anexo_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error: e0 } = await supabaseAdmin
+      .from("aluno_anexos").select("file_path").eq("id", data.anexo_id).maybeSingle();
+    if (e0) throw e0;
+    if (!row) throw new Error("Anexo não encontrado");
+    await supabaseAdmin.storage.from("aluno-anexos").remove([row.file_path]);
+    const { error: e1 } = await supabaseAdmin.from("aluno_anexos").delete().eq("id", data.anexo_id);
+    if (e1) throw e1;
+    return { ok: true };
+  });
+
+export const baixarAnexoAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ anexo_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error: e0 } = await supabaseAdmin
+      .from("aluno_anexos").select("file_path, file_name").eq("id", data.anexo_id).maybeSingle();
+    if (e0) throw e0;
+    if (!row) throw new Error("Anexo não encontrado");
+    const { data: signed, error: e1 } = await supabaseAdmin.storage
+      .from("aluno-anexos").createSignedUrl(row.file_path, 300, { download: row.file_name });
+    if (e1) throw e1;
+    return { url: signed.signedUrl };
   });
 
 export const criarProfessor = createServerFn({ method: "POST" })
