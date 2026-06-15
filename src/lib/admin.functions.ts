@@ -276,7 +276,7 @@ export const atualizarAluno = createServerFn({ method: "POST" })
     if (data.endereco !== undefined) profilePatch.endereco = data.endereco;
     if (data.contato_emergencia !== undefined) profilePatch.contato_emergencia = data.contato_emergencia;
     if (Object.keys(profilePatch).length) {
-      const { error: ep } = await supabaseAdmin.from("profiles").update(profilePatch).eq("id", aluno.profile_id);
+      const { error: ep } = await supabaseAdmin.from("profiles").update(profilePatch as any).eq("id", aluno.profile_id);
       if (ep) throw ep;
     }
     if (data.email !== undefined) {
@@ -288,7 +288,7 @@ export const atualizarAluno = createServerFn({ method: "POST" })
     if (data.plano_id !== undefined) alunoPatch.plano_id = data.plano_id;
     if (data.status !== undefined) alunoPatch.status = data.status;
     if (Object.keys(alunoPatch).length) {
-      const { error: ea } = await supabaseAdmin.from("alunos").update(alunoPatch).eq("id", data.aluno_id);
+      const { error: ea } = await supabaseAdmin.from("alunos").update(alunoPatch as any).eq("id", data.aluno_id);
       if (ea) throw ea;
     }
     return { ok: true };
