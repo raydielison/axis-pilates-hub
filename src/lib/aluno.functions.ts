@@ -184,3 +184,33 @@ export const slotsDisponiveis = createServerFn({ method: "POST" })
     }
     return horarios.map((h) => ({ hora: h, ocupado: counts[h] ?? 0, capacidade: 4 }));
   });
+
+export const meusAnexos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const aluno = await getMyAluno(context.supabase, context.userId);
+    if (!aluno) return [];
+    const { data } = await context.supabase
+      .from("aluno_anexos").select("*").eq("aluno_id", aluno.id)
+      .order("created_at", { ascending: false });
+    return data ?? [];
+  });
+
+export const baixarMeuAnexo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ anexo_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const aluno = await getMyAluno(context.supabase, context.userId);
+    if (!aluno) throw new Error("Aluno não encontrado");
+    const { data: row, error } = await context.supabase
+      .from("aluno_anexos").select("file_path, file_name, aluno_id")
+      .eq("id", data.anexo_id).maybeSingle();
+    if (error) throw error;
+    if (!row || row.aluno_id !== aluno.id) throw new Error("Não autorizado");
+    const { data: signed, error: e1 } = await context.supabase.storage
+      .from("aluno-anexos").createSignedUrl(row.file_path, 300, { download: row.file_name });
+    if (e1) throw e1;
+    return { url: signed.signedUrl };
+  });

@@ -14,11 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      aluno_anexos: {
+        Row: {
+          aluno_id: string
+          created_at: string
+          descricao: string | null
+          file_name: string
+          file_path: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          aluno_id: string
+          created_at?: string
+          descricao?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          aluno_id?: string
+          created_at?: string
+          descricao?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aluno_anexos_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "alunos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alunos: {
         Row: {
           cpf: string | null
           created_at: string
           data_inicio: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           plano_id: string | null
           profile_id: string
@@ -29,6 +75,8 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           data_inicio?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           plano_id?: string | null
           profile_id: string
@@ -39,6 +87,8 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           data_inicio?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           plano_id?: string | null
           profile_id?: string
@@ -452,7 +502,7 @@ export type Database = {
       }
     }
     Enums: {
-      aluno_status: "ativo" | "suspenso" | "cancelado"
+      aluno_status: "ativo" | "suspenso" | "cancelado" | "excluido"
       app_role: "admin" | "professor" | "aluno"
       pagamento_forma: "pix" | "cartao" | "dinheiro"
       pagamento_status: "pago" | "pendente" | "atrasado"
@@ -590,7 +640,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      aluno_status: ["ativo", "suspenso", "cancelado"],
+      aluno_status: ["ativo", "suspenso", "cancelado", "excluido"],
       app_role: ["admin", "professor", "aluno"],
       pagamento_forma: ["pix", "cartao", "dinheiro"],
       pagamento_status: ["pago", "pendente", "atrasado"],
