@@ -289,6 +289,7 @@ export const atualizarAluno = createServerFn({ method: "POST" })
     if (data.cpf !== undefined) alunoPatch.cpf = data.cpf;
     if (data.plano_id !== undefined) alunoPatch.plano_id = data.plano_id;
     if (data.status !== undefined) alunoPatch.status = data.status;
+    if (data.turno !== undefined) alunoPatch.turno = data.turno;
     if (Object.keys(alunoPatch).length) {
       const { error: ea } = await supabaseAdmin.from("alunos").update(alunoPatch as any).eq("id", data.aluno_id);
       if (ea) throw ea;
