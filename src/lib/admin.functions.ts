@@ -260,6 +260,7 @@ export const atualizarAluno = createServerFn({ method: "POST" })
       cpf: z.string().max(20).optional().nullable(),
       plano_id: z.string().uuid().optional().nullable(),
       status: z.enum(["ativo", "suspenso", "cancelado"]).optional(),
+      turno: z.enum(["manha", "tarde_noite"]).optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
