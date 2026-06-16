@@ -18,9 +18,11 @@ function Perfil() {
   const fnSave = useServerFn(atualizarPerfil);
   const fnAnexos = useServerFn(meusAnexos);
   const fnBaixar = useServerFn(baixarMeuAnexo);
+  const fnFichas = useServerFn(minhasFichas);
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["my-profile"], queryFn: () => fnProfile() });
   const { data: anexos } = useQuery({ queryKey: ["meus-anexos"], queryFn: () => fnAnexos() });
+  const { data: fichas } = useQuery({ queryKey: ["minhas-fichas"], queryFn: () => fnFichas() });
   const [tel, setTel] = useState("");
   const [end, setEnd] = useState("");
   const [emerg, setEmerg] = useState("");
