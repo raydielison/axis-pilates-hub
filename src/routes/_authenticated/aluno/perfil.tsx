@@ -84,6 +84,23 @@ function Perfil() {
           </div>
         </div>
       </div>
+
+      <h2 className="font-display font-semibold mt-8 mb-3">Fichas de evolução</h2>
+      <div className="space-y-2">
+        {(fichas ?? []).map((f: any) => (
+          <div key={f.id} className="rounded-xl border bg-card p-4">
+            <div className="flex justify-between text-xs text-muted-foreground mb-2">
+              <span className="font-medium text-foreground">{new Date(f.data).toLocaleDateString("pt-BR")}</span>
+            </div>
+            {f.aparelhos?.length > 0 && (
+              <p className="text-sm"><span className="text-muted-foreground">Aparelhos:</span> {f.aparelhos.join(", ")}</p>
+            )}
+            {f.exercicios && <p className="text-sm mt-1"><span className="text-muted-foreground">Exercícios:</span> {f.exercicios}</p>}
+            {f.observacoes && <p className="text-sm mt-1"><span className="text-muted-foreground">Observações:</span> {f.observacoes}</p>}
+          </div>
+        ))}
+        {!fichas?.length && <p className="text-sm text-muted-foreground">Nenhuma ficha registrada ainda.</p>}
+      </div>
     </div>
   );
 }
