@@ -443,7 +443,7 @@ export const atualizarProfessor = createServerFn({ method: "POST" })
     if (data.telefone !== undefined) profilePatch.telefone = data.telefone;
     if (data.endereco !== undefined) profilePatch.endereco = data.endereco;
     if (Object.keys(profilePatch).length) {
-      const { error } = await supabaseAdmin.from("profiles").update(profilePatch).eq("id", pro.profile_id);
+      const { error } = await supabaseAdmin.from("profiles").update(profilePatch as any).eq("id", pro.profile_id);
       if (error) throw error;
     }
     if (data.email !== undefined) {
@@ -454,7 +454,7 @@ export const atualizarProfessor = createServerFn({ method: "POST" })
     if (data.turno !== undefined) proPatch.turno = data.turno;
     if (data.ativo !== undefined) proPatch.ativo = data.ativo;
     if (Object.keys(proPatch).length) {
-      const { error } = await supabaseAdmin.from("professores").update(proPatch).eq("id", data.professor_id);
+      const { error } = await supabaseAdmin.from("professores").update(proPatch as any).eq("id", data.professor_id);
       if (error) throw error;
     }
     return { ok: true };
