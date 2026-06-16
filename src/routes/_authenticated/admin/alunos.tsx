@@ -36,7 +36,7 @@ function AlunosAdmin() {
   const { data: excluidos } = useQuery({ queryKey: ["admin-alunos-excluidos"], queryFn: () => fnDel() });
   const { data: planos } = useQuery({ queryKey: ["planos"], queryFn: () => fnPlanos() });
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "" });
+  const [form, setForm] = useState({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "", turno: "manha" as "manha" | "tarde_noite" });
 
   const mNew = useMutation({
     mutationFn: () => fnNew({ data: { ...form, plano_id: form.plano_id || null } as any }),
