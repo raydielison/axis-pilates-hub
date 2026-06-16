@@ -305,6 +305,16 @@ function EditarAlunoDialog({ aluno, planos }: { aluno: any; planos: any[] }) {
               </Select>
             </div>
           </div>
+          <div>
+            <Label>Turno</Label>
+            <Select value={f.turno} onValueChange={(v: any) => setF({ ...f, turno: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manha">Manhã</SelectItem>
+                <SelectItem value="tarde_noite">Tarde/Noite</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button className="w-full bg-primary hover:bg-primary/90" disabled={m.isPending} onClick={() => m.mutate()}>
             {m.isPending ? "Salvando…" : "Salvar alterações"}
           </Button>
