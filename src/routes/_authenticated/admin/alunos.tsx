@@ -255,6 +255,7 @@ function EditarAlunoDialog({ aluno, planos }: { aluno: any; planos: any[] }) {
     cpf: aluno.cpf ?? "",
     plano_id: aluno.plano_id ?? "",
     status: aluno.status === "excluido" ? "ativo" : aluno.status,
+    turno: aluno.turno ?? "manha",
   });
 
   const m = useMutation({
