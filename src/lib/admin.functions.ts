@@ -144,6 +144,7 @@ export const criarAluno = createServerFn({ method: "POST" })
       telefone: z.string().max(20).optional().nullable(),
       endereco: z.string().max(200).optional().nullable(),
       plano_id: z.string().uuid().optional().nullable(),
+      turno: z.enum(["manha", "tarde_noite"]).default("manha"),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -160,8 +161,8 @@ export const criarAluno = createServerFn({ method: "POST" })
     }).eq("id", user.user.id);
     await supabaseAdmin.from("user_roles").insert({ user_id: user.user.id, role: "aluno" });
     const { error: e2 } = await supabaseAdmin.from("alunos").insert({
-      profile_id: user.user.id, cpf: data.cpf, plano_id: data.plano_id ?? null,
-    });
+      profile_id: user.user.id, cpf: data.cpf, plano_id: data.plano_id ?? null, turno: data.turno,
+    } as any);
     if (e2) throw e2;
     return { ok: true, tempPassword };
   });
