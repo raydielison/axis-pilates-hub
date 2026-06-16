@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { atualizarPerfil, baixarMeuAnexo, meusAnexos } from "@/lib/aluno.functions";
+import { atualizarPerfil, baixarMeuAnexo, meusAnexos, minhasFichas } from "@/lib/aluno.functions";
 import { getMyProfile } from "@/lib/auth.functions";
 import { PageHeader } from "@/components/ui-helpers";
 import { Input } from "@/components/ui/input";
