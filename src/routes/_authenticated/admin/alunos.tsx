@@ -108,14 +108,26 @@ function AlunosAdmin() {
                     <div><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
                   </div>
                   <div><Label>Endereço</Label><Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} /></div>
-                  <div>
-                    <Label>Plano</Label>
-                    <Select value={form.plano_id} onValueChange={(v) => setForm({ ...form, plano_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {(planos ?? []).map((p: any) => <SelectItem key={p.id} value={p.id}>{p.nome} — R$ {Number(p.valor).toFixed(2)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Plano</Label>
+                      <Select value={form.plano_id} onValueChange={(v) => setForm({ ...form, plano_id: v })}>
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          {(planos ?? []).map((p: any) => <SelectItem key={p.id} value={p.id}>{p.nome} — R$ {Number(p.valor).toFixed(2)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Turno</Label>
+                      <Select value={form.turno} onValueChange={(v: any) => setForm({ ...form, turno: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="manha">Manhã</SelectItem>
+                          <SelectItem value="tarde_noite">Tarde/Noite</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <Button className="w-full bg-primary hover:bg-primary/90" disabled={mNew.isPending} onClick={() => mNew.mutate()}>
                     {mNew.isPending ? "Criando…" : "Criar aluno"}
