@@ -70,6 +70,7 @@ export type Database = {
           profile_id: string
           saldo_reposicoes: number
           status: Database["public"]["Enums"]["aluno_status"]
+          turno: Database["public"]["Enums"]["turno_pro"]
         }
         Insert: {
           cpf?: string | null
@@ -82,6 +83,7 @@ export type Database = {
           profile_id: string
           saldo_reposicoes?: number
           status?: Database["public"]["Enums"]["aluno_status"]
+          turno?: Database["public"]["Enums"]["turno_pro"]
         }
         Update: {
           cpf?: string | null
@@ -94,6 +96,7 @@ export type Database = {
           profile_id?: string
           saldo_reposicoes?: number
           status?: Database["public"]["Enums"]["aluno_status"]
+          turno?: Database["public"]["Enums"]["turno_pro"]
         }
         Relationships: [
           {
@@ -156,6 +159,54 @@ export type Database = {
           valor?: Json
         }
         Relationships: []
+      }
+      fichas_evolucao: {
+        Row: {
+          aluno_id: string
+          aparelhos: string[]
+          created_at: string
+          data: string
+          exercicios: string | null
+          id: string
+          observacoes: string | null
+          professor_id: string | null
+        }
+        Insert: {
+          aluno_id: string
+          aparelhos?: string[]
+          created_at?: string
+          data?: string
+          exercicios?: string | null
+          id?: string
+          observacoes?: string | null
+          professor_id?: string | null
+        }
+        Update: {
+          aluno_id?: string
+          aparelhos?: string[]
+          created_at?: string
+          data?: string
+          exercicios?: string | null
+          id?: string
+          observacoes?: string | null
+          professor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichas_evolucao_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "alunos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichas_evolucao_professor_id_fkey"
+            columns: ["professor_id"]
+            isOneToOne: false
+            referencedRelation: "professores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       horarios_fixos: {
         Row: {
@@ -361,23 +412,26 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          crefito: string | null
           id: string
           profile_id: string
-          turno: Database["public"]["Enums"]["turno"]
+          turno: Database["public"]["Enums"]["turno_pro"]
         }
         Insert: {
           ativo?: boolean
           created_at?: string
+          crefito?: string | null
           id?: string
           profile_id: string
-          turno?: Database["public"]["Enums"]["turno"]
+          turno?: Database["public"]["Enums"]["turno_pro"]
         }
         Update: {
           ativo?: boolean
           created_at?: string
+          crefito?: string | null
           id?: string
           profile_id?: string
-          turno?: Database["public"]["Enums"]["turno"]
+          turno?: Database["public"]["Enums"]["turno_pro"]
         }
         Relationships: [
           {
@@ -463,6 +517,27 @@ export type Database = {
           },
         ]
       }
+      studio_aparelhos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -513,6 +588,7 @@ export type Database = {
         | "reposicao"
       reposicao_status: "pendente" | "realizada" | "expirada" | "cancelada"
       turno: "manha" | "tarde" | "noite"
+      turno_pro: "manha" | "tarde_noite"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -652,6 +728,7 @@ export const Constants = {
       ],
       reposicao_status: ["pendente", "realizada", "expirada", "cancelada"],
       turno: ["manha", "tarde", "noite"],
+      turno_pro: ["manha", "tarde_noite"],
     },
   },
 } as const

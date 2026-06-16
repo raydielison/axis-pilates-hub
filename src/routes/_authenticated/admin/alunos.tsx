@@ -36,7 +36,7 @@ function AlunosAdmin() {
   const { data: excluidos } = useQuery({ queryKey: ["admin-alunos-excluidos"], queryFn: () => fnDel() });
   const { data: planos } = useQuery({ queryKey: ["planos"], queryFn: () => fnPlanos() });
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "" });
+  const [form, setForm] = useState({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "", turno: "manha" as "manha" | "tarde_noite" });
 
   const mNew = useMutation({
     mutationFn: () => fnNew({ data: { ...form, plano_id: form.plano_id || null } as any }),
@@ -47,7 +47,7 @@ function AlunosAdmin() {
       });
       qc.invalidateQueries({ queryKey: ["admin-alunos"] });
       setOpen(false);
-      setForm({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "" });
+      setForm({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "", turno: "manha" });
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
@@ -108,14 +108,26 @@ function AlunosAdmin() {
                     <div><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
                   </div>
                   <div><Label>Endereço</Label><Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} /></div>
-                  <div>
-                    <Label>Plano</Label>
-                    <Select value={form.plano_id} onValueChange={(v) => setForm({ ...form, plano_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {(planos ?? []).map((p: any) => <SelectItem key={p.id} value={p.id}>{p.nome} — R$ {Number(p.valor).toFixed(2)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Plano</Label>
+                      <Select value={form.plano_id} onValueChange={(v) => setForm({ ...form, plano_id: v })}>
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          {(planos ?? []).map((p: any) => <SelectItem key={p.id} value={p.id}>{p.nome} — R$ {Number(p.valor).toFixed(2)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Turno</Label>
+                      <Select value={form.turno} onValueChange={(v: any) => setForm({ ...form, turno: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="manha">Manhã</SelectItem>
+                          <SelectItem value="tarde_noite">Tarde/Noite</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <Button className="w-full bg-primary hover:bg-primary/90" disabled={mNew.isPending} onClick={() => mNew.mutate()}>
                     {mNew.isPending ? "Criando…" : "Criar aluno"}
@@ -243,6 +255,7 @@ function EditarAlunoDialog({ aluno, planos }: { aluno: any; planos: any[] }) {
     cpf: aluno.cpf ?? "",
     plano_id: aluno.plano_id ?? "",
     status: aluno.status === "excluido" ? "ativo" : aluno.status,
+    turno: aluno.turno ?? "manha",
   });
 
   const m = useMutation({
@@ -291,6 +304,16 @@ function EditarAlunoDialog({ aluno, planos }: { aluno: any; planos: any[] }) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div>
+            <Label>Turno</Label>
+            <Select value={f.turno} onValueChange={(v: any) => setF({ ...f, turno: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manha">Manhã</SelectItem>
+                <SelectItem value="tarde_noite">Tarde/Noite</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <Button className="w-full bg-primary hover:bg-primary/90" disabled={m.isPending} onClick={() => m.mutate()}>
             {m.isPending ? "Salvando…" : "Salvar alterações"}

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { atualizarPerfil, baixarMeuAnexo, meusAnexos } from "@/lib/aluno.functions";
+import { atualizarPerfil, baixarMeuAnexo, meusAnexos, minhasFichas } from "@/lib/aluno.functions";
 import { getMyProfile } from "@/lib/auth.functions";
 import { PageHeader } from "@/components/ui-helpers";
 import { Input } from "@/components/ui/input";
@@ -18,9 +18,11 @@ function Perfil() {
   const fnSave = useServerFn(atualizarPerfil);
   const fnAnexos = useServerFn(meusAnexos);
   const fnBaixar = useServerFn(baixarMeuAnexo);
+  const fnFichas = useServerFn(minhasFichas);
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["my-profile"], queryFn: () => fnProfile() });
   const { data: anexos } = useQuery({ queryKey: ["meus-anexos"], queryFn: () => fnAnexos() });
+  const { data: fichas } = useQuery({ queryKey: ["minhas-fichas"], queryFn: () => fnFichas() });
   const [tel, setTel] = useState("");
   const [end, setEnd] = useState("");
   const [emerg, setEmerg] = useState("");
@@ -81,6 +83,23 @@ function Perfil() {
             )}
           </div>
         </div>
+      </div>
+
+      <h2 className="font-display font-semibold mt-8 mb-3">Fichas de evolução</h2>
+      <div className="space-y-2">
+        {(fichas ?? []).map((f: any) => (
+          <div key={f.id} className="rounded-xl border bg-card p-4">
+            <div className="flex justify-between text-xs text-muted-foreground mb-2">
+              <span className="font-medium text-foreground">{new Date(f.data).toLocaleDateString("pt-BR")}</span>
+            </div>
+            {f.aparelhos?.length > 0 && (
+              <p className="text-sm"><span className="text-muted-foreground">Aparelhos:</span> {f.aparelhos.join(", ")}</p>
+            )}
+            {f.exercicios && <p className="text-sm mt-1"><span className="text-muted-foreground">Exercícios:</span> {f.exercicios}</p>}
+            {f.observacoes && <p className="text-sm mt-1"><span className="text-muted-foreground">Observações:</span> {f.observacoes}</p>}
+          </div>
+        ))}
+        {!fichas?.length && <p className="text-sm text-muted-foreground">Nenhuma ficha registrada ainda.</p>}
       </div>
     </div>
   );

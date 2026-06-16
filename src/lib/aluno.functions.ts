@@ -214,3 +214,24 @@ export const baixarMeuAnexo = createServerFn({ method: "POST" })
     if (e1) throw e1;
     return { url: signed.signedUrl };
   });
+
+export const gradeCompleta = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase
+      .from("horarios_fixos")
+      .select("id, dia_semana, hora, aluno:alunos(id, profile:profiles(nome))")
+      .order("dia_semana").order("hora");
+    return data ?? [];
+  });
+
+export const minhasFichas = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const aluno = await getMyAluno(context.supabase, context.userId);
+    if (!aluno) return [];
+    const { data } = await context.supabase
+      .from("fichas_evolucao").select("*").eq("aluno_id", aluno.id)
+      .order("data", { ascending: false }).limit(60);
+    return data ?? [];
+  });

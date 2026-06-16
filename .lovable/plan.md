@@ -1,139 +1,95 @@
 
-# AXIS PILATES COLÉGIO BATISTA — Sistema de Gestão
+## Plano
 
-PWA responsivo (mobile-first com look de app), com sidebar no desktop e bottom-nav no mobile. Paleta **preto / branco / laranja**, tipografia moderna (Space Grotesk + Inter), cantos arredondados, sombras suaves.
+### 1. Turnos (manhã / tarde_noite)
 
-## 1. Backend (Lovable Cloud / Supabase)
+Migração:
+- Novo enum `turno_pro` com valores `manha`, `tarde_noite`. Coluna `professores.turno` migrada (tarde→tarde_noite, noite→tarde_noite). Enum antigo removido.
+- Adicionar colunas em `professores`: `crefito text`, `ativo` já existe.
+- Adicionar coluna em `alunos`: `turno turno_pro` (derivada/escolhida no cadastro do aluno; default `manha`). Permite que cada aluno seja vinculado a um turno e portanto a um professor.
+  - Backfill: alunos com qualquer `horarios_fixos.hora < '12:00'` → `manha`; demais → `tarde_noite`. Sem horários → `manha`.
 
-### Tabelas
-- `profiles` — id (=auth.uid), nome, telefone, endereco, contato_emergencia, created_at
-- `user_roles` — user_id, role (`admin` | `professor` | `aluno`) — tabela separada + função `has_role()` (segurança)
-- `planos` — id, nome, frequencia_semanal (1/2/3), valor
-- `alunos` — id, profile_id, cpf, plano_id, status (`ativo`|`suspenso`|`cancelado`), data_inicio, saldo_reposicoes
-- `professores` — id, profile_id, turno (`manha`|`tarde`|`noite`)
-- `horarios_fixos` — id, aluno_id, dia_semana (1-5), hora (07:00–11:00, 16:00–22:00), professor_id
-- `slots_agenda` — id, data, hora, professor_id, capacidade (default 4) — gerado dinamicamente ou tabela
-- `presencas` — id, aluno_id, data, hora, status (`presente`|`falta_justificada`|`falta_nao_justificada`|`reposicao`), observacao
-- `reposicoes` — id, aluno_id, data_origem, data_agendada, hora_agendada, status (`pendente`|`realizada`|`expirada`), criada_em, expira_em (30 dias)
-- `pagamentos` — id, aluno_id, mes_referencia, valor, data_pagamento, forma (`pix`|`cartao`|`dinheiro`), status (`pago`|`pendente`|`atrasado`)
-- `avisos` — id, titulo, mensagem, destinatario (`todos`|`alunos`|`professores`|user_id), criado_em
-- `observacoes_aluno` — id, aluno_id, professor_id, texto, criada_em
-- `configuracoes` — chave/valor (horários funcionamento, capacidade, dia vencimento)
+### 2. Professores — admin gerencia (CRUD completo)
 
-### Segurança
-- RLS em todas as tabelas
-- Função `public.has_role(uuid, app_role)` security-definer
-- Políticas por perfil: aluno vê só seus dados; professor vê seus alunos/agenda; admin vê tudo
-- GRANTs explícitos (`authenticated`, `service_role`)
+Server fns em `admin.functions.ts`:
+- `atualizarProfessor` (nome, email, telefone, endereço, crefito, turno, ativo). Atualiza `profiles`, `professores`, e `auth.users` (email) via `supabaseAdmin`.
+- `redefinirSenhaProfessor({ professor_id, nova_senha })` → `supabaseAdmin.auth.admin.updateUserById(..., { password })`.
+- `excluirProfessor` (soft delete: `ativo=false` + ban). Reativar idem.
+- `criarProfessor` já existe — estender com endereço e crefito.
 
-### Regras de negócio (triggers/cron)
-- Trigger ao criar `auth.user` → cria `profile`
-- Server function diária (cron): se hoje ≥ dia 11 e não há pagamento do mês → `alunos.status = 'suspenso'`
-- Reposições: trigger ao inserir presença `falta_justificada` → `saldo_reposicoes += 1`; ao agendar reposição decrementa; expira em 30 dias
-- Validação ao agendar reposição: aluno não suspenso, slot < 4 alunos, ≥ 24h antecedência
+UI `admin/professores.tsx`:
+- Botão "Editar" por card abrindo Dialog com todos os campos pessoais + login (email) + botão "Redefinir senha".
+- Filtro/abas Ativos / Inativos.
 
-### Seed
-- 1 admin (`admin@axispilates.com`)
-- 2 professores (`prof1@axispilates.com`, `prof2@axispilates.com`)
-- ~10 alunos (`aluno1@…` … `aluno10@…`) com planos variados e horários fixos
-- 3 planos, presenças/pagamentos do mês atual e anterior, alguns avisos
-- Senha padrão: **`axis1234`**
+### 3. Agenda integrada (todos os usuários, edição restrita)
 
-## 2. Autenticação
-- Email/senha via Supabase Auth (auto-confirm para dev)
-- Rota pública `/auth` (login + sinalização para admin cadastrar)
-- Layout protegido `_authenticated/` (gate integrado, ssr:false)
-- Redirecionamento por perfil pós-login: `/admin`, `/professor`, `/aluno`
+- Mover o grid de agenda para um componente compartilhado `AgendaGrid` (5 dias × 10 horários, 4 vagas/horário).
+- Rotas:
+  - `/admin/agenda`, `/professor/agenda` — modo edição: clique numa célula abre dialog para adicionar/remover aluno daquele dia/hora (apenas professores cujo turno bate com a hora, ou admin).
+  - `/aluno/horario` — modo leitura, mostra a grade toda destacando suas próprias aulas.
+- Nova server fn `upsertHorarioFixo({ aluno_id, dia_semana, hora })` e `removerHorarioFixo({ id })` — autoriza admin sempre, professor apenas quando o `aluno.turno` casa com o seu próprio turno.
 
-## 3. Estrutura de rotas (TanStack Start)
+### 4. Reposição livre pelo aluno
 
-```
-src/routes/
-  __root.tsx                       (shell + PWA meta + onAuthStateChange)
-  index.tsx                        (landing/redirect por perfil)
-  auth.tsx                         (login)
-  _authenticated/
-    route.tsx                      (gate)
-    aluno/
-      index.tsx                    (dashboard)
-      horario.tsx
-      presencas.tsx
-      reposicoes.tsx
-      financeiro.tsx
-      perfil.tsx
-    professor/
-      index.tsx                    (dashboard)
-      agenda.tsx
-      alunos.tsx
-      presenca.tsx
-      observacoes.tsx
-    admin/
-      index.tsx                    (dashboard com KPIs)
-      alunos.tsx
-      professores.tsx
-      planos.tsx
-      agenda.tsx
-      financeiro.tsx
-      relatorios.tsx
-      configuracoes.tsx
-```
+Já existe `slotsDisponiveis` + `solicitarReposicao`. UI em `/aluno/reposicoes`:
+- Acrescentar seletor de data + lista de horários (07–10h, 16–21h) com chip "X/4 vagas". Botão "Agendar" desabilitado quando cheio, <24h ou saldo=0.
+- Mantém regra: só permite se houver crédito (gerado por falta justificada via trigger existente).
 
-## 4. Frontend / UI
+### 5. Escopo do professor pelo turno
 
-### Design system
-- `src/styles.css`: tokens em oklch
-  - `--background` branco, `--foreground` preto
-  - `--primary` laranja (`oklch(0.72 0.19 50)`), `--primary-foreground` branco
-  - `--accent`, gradientes laranja→âmbar para CTAs e cards de destaque
-  - Dark mode: fundo preto, laranja como acento vibrante
-- Fontes via `<link>` no root: Space Grotesk (display) + Inter (body)
-- Cantos `rounded-2xl`, sombras suaves, transições motion suaves
+Em `professor.functions.ts`:
+- `listarAlunosProfessor`: filtra `alunos.turno = meu_turno` e `deleted_at IS NULL`.
+- Nova `alunosDoSlot({ data, hora })`: alunos com `horarios_fixos` casando dia_semana+hora E turno do professor E sem `presencas` registradas para aquele `data+hora`.
+- `marcarPresenca` continua igual; o filtro de "sumir após marcar" vem da query acima.
 
-### Shell de navegação
-- `AppShell` componente:
-  - Desktop (≥ md): Sidebar shadcn (collapsible icon) à esquerda, header com nome do estúdio + avatar
-  - Mobile: bottom-nav fixo (5 itens principais por perfil) + header compacto
-  - Itens dinâmicos por perfil
+### 6. Tela Presença (professor)
 
-### Componentes-chave
-- `KPICard` (dashboards)
-- `ScheduleGrid` (grade dias × horários, slots com capacidade)
-- `PresenceMarker` (4 botões grandes: Presente/FJ/FNJ/Reposição)
-- `PaymentBadge` (pago/pendente/atrasado)
-- `StudentCard`, `ClassRow`
-- Formulários com react-hook-form + zod
+Substituir lista atual por:
+- Seletor data + hora.
+- `useQuery(alunosDoSlot)` — só os alunos daquele slot, sem presença já lançada.
+- Ao marcar, `invalidateQueries` faz o aluno desaparecer; reaparece somente no próximo `data+hora` que estiver na agenda dele.
 
-### PWA
-- `public/manifest.webmanifest` (nome, theme `#FF6A00`, display `standalone`, ícones)
-- Tags `<link rel="manifest">`, `theme-color`, `apple-touch-icon` no `__root.tsx`
-- **Sem service worker** (apenas instalável; modo offline não solicitado)
-- Ícone gerado (logotipo "AXIS" em laranja sobre preto)
+### 7. Anexos por professor (visualizar/adicionar, sem excluir)
 
-## 5. Server functions (sem Edge Functions)
-- `src/lib/auth.functions.ts` — getMyProfile, getMyRole
-- `src/lib/aluno.functions.ts` — meuDashboard, meuHorario, minhasPresencas, meuSaldoReposicoes, solicitarReposicao, slotsDisponiveis, meuFinanceiro, atualizarPerfil
-- `src/lib/professor.functions.ts` — minhasAulasHoje, meusAlunos, marcarPresenca, registrarObservacao, agendaSemana
-- `src/lib/admin.functions.ts` — dashboardKPIs, listarAlunos, criarAluno, listarProfessores, criarProfessor, planos CRUD, registrarPagamento, listarInadimplentes, relatorios, marcarSuspensos (job manual)
-- Todas com `requireSupabaseAuth` + verificação de `has_role`
+- RLS em `aluno_anexos`: adicionar policy SELECT para `has_role(professor)` quando o `aluno.turno = professor.turno`; INSERT idem; sem DELETE.
+- Server fns em `professor.functions.ts`: `listarAnexosProfessor({aluno_id})`, `uploadAnexoProfessor(...)`, `baixarAnexoProfessor({anexo_id})` — verificam turno antes.
+- UI: em `/professor/alunos`, botão de anexos por card abrindo Sheet (igual ao admin, sem botão excluir).
 
-## 6. Entrega
-1. Habilitar Lovable Cloud
-2. Migrações: enum, tabelas, RLS, funções, triggers, seeds (planos + cron)
-3. Seed de usuários via server function de bootstrap (admin/professores/alunos com `axis1234`)
-4. Implementar tokens de design + AppShell + PWA manifest/ícone
-5. Implementar rotas Auth e gate
-6. Construir telas do Aluno → Professor → Admin
-7. Validar com login de cada perfil
+### 8. Ficha de evolução
 
-## Detalhes técnicos
-- Stack: TanStack Start + React 19 + Tailwind v4 + shadcn/ui + Framer Motion + TanStack Query
-- Validação: zod em todas as server functions
-- Datas: `date-fns` (pt-BR)
-- Pagamentos: somente registro manual; estrutura pronta para integrar PIX/Stripe depois (campo `forma` + `transaction_id` opcional)
-- Sem WhatsApp agora; campo `telefone` já normalizado para futura integração
+Nova tabela `fichas_evolucao`:
+- `id`, `aluno_id`, `professor_id`, `data`, `aparelhos text[]`, `exercicios text`, `observacoes text`, `created_at`.
+- Grants + RLS: professor/admin INSERT e SELECT; aluno SELECT da própria ficha.
 
-## Fora de escopo (nesta entrega)
-- Integração real PIX/Stripe
-- Envio de WhatsApp/SMS
-- Modo offline (PWA apenas instalável)
-- App nativo
+Lista padrão de aparelhos (default; admin pode editar depois em Configurações):
+`Reformer, Cadillac, Chair (Wunda), Ladder Barrel, Spine Corrector, Mat, Tower, Step Barrel, Tonificador`
+
+Server fns: `registrarFicha`, `listarFichasAluno`.
+
+UI:
+- `/professor/observacoes` ganha aba "Ficha de evolução": seletor de aluno (apenas alunos com presença confirmada hoje), data, checklist de aparelhos, campos exercícios/observações.
+- `/aluno/perfil` (ou nova aba `/aluno/evolucao`): lista das próprias fichas.
+
+### 9. Detalhes técnicos
+
+- Todas as novas server fns usam `requireSupabaseAuth` + checagem de role/turno.
+- Migrações em ordem: enum novo → coluna `alunos.turno` → backfill → `professores.crefito` → tabela `fichas_evolucao` (com GRANT + RLS) → policies extras em `aluno_anexos`.
+- Sem mudanças no schema gerado do Supabase types até depois da migração rodar.
+- Anexo do professor reaproveita bucket existente `aluno-anexos`.
+
+### Arquivos a editar/criar
+
+- `supabase/migrations/<novo>.sql`
+- `src/lib/admin.functions.ts` (editar/criar professor, atualizar senha, upsert horário)
+- `src/lib/professor.functions.ts` (filtro turno, alunosDoSlot, anexos professor, fichas)
+- `src/lib/aluno.functions.ts` (nenhuma mudança grande; talvez `minhasFichas`)
+- `src/components/agenda-grid.tsx` (novo, compartilhado)
+- `src/routes/_authenticated/admin/professores.tsx` (edição completa + senha)
+- `src/routes/_authenticated/admin/agenda.tsx` (modo edição)
+- `src/routes/_authenticated/professor/agenda.tsx` (modo edição)
+- `src/routes/_authenticated/professor/alunos.tsx` (filtro turno + anexos)
+- `src/routes/_authenticated/professor/presenca.tsx` (slot-based)
+- `src/routes/_authenticated/professor/observacoes.tsx` (aba ficha)
+- `src/routes/_authenticated/aluno/horario.tsx` (mostrar grade completa)
+- `src/routes/_authenticated/aluno/reposicoes.tsx` (seletor de slots)
+- `src/routes/_authenticated/aluno/perfil.tsx` (listar fichas)
