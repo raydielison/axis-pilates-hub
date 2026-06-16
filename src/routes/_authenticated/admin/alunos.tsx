@@ -47,7 +47,7 @@ function AlunosAdmin() {
       });
       qc.invalidateQueries({ queryKey: ["admin-alunos"] });
       setOpen(false);
-      setForm({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "" });
+      setForm({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "", turno: "manha" });
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
