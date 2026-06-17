@@ -90,6 +90,16 @@ function AlunosAdmin() {
     onError: (e: Error) => toast.error("Erro ao reativar", { description: e.message }),
   });
 
+  const fnPermDel = useServerFn(excluirAlunoPermanente);
+  const mPermDel = useMutation({
+    mutationFn: (aluno_id: string) => fnPermDel({ data: { aluno_id } }),
+    onSuccess: () => {
+      toast.success("Aluno excluído permanentemente");
+      qc.invalidateQueries({ queryKey: ["admin-alunos-excluidos"] });
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+
   return (
     <div>
       <PageHeader
