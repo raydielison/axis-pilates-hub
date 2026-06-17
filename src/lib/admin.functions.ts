@@ -145,14 +145,18 @@ export const criarAluno = createServerFn({ method: "POST" })
       endereco: z.string().max(200).optional().nullable(),
       plano_id: z.string().uuid().optional().nullable(),
       turno: z.enum(["manha", "tarde_noite"]).default("manha"),
+      slots: z.array(z.object({
+        dia_semana: z.number().int().min(1).max(5),
+        hora: z.string().regex(/^\d{2}:\d{2}$/),
+      })).optional().default([]),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const tempPassword = `Axis-${crypto.randomUUID().slice(0, 12)}`;
+    const senhaPadrao = "axis1234";
     const { data: user, error: e1 } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email, password: tempPassword, email_confirm: true,
+      email: data.email, password: senhaPadrao, email_confirm: true,
       user_metadata: { nome: data.nome, force_password_change: true },
     });
     if (e1 || !user.user) throw new Error(e1?.message ?? "Falha ao criar usuário");
@@ -160,11 +164,63 @@ export const criarAluno = createServerFn({ method: "POST" })
       nome: data.nome, telefone: data.telefone, endereco: data.endereco,
     }).eq("id", user.user.id);
     await supabaseAdmin.from("user_roles").insert({ user_id: user.user.id, role: "aluno" });
-    const { error: e2 } = await supabaseAdmin.from("alunos").insert({
+    const { data: alunoRow, error: e2 } = await supabaseAdmin.from("alunos").insert({
       profile_id: user.user.id, cpf: data.cpf, plano_id: data.plano_id ?? null, turno: data.turno,
-    } as any);
+    } as any).select("id").single();
     if (e2) throw e2;
-    return { ok: true, tempPassword };
+
+    if (data.slots && data.slots.length) {
+      if (data.plano_id) {
+        const { data: pl } = await supabaseAdmin.from("planos").select("frequencia_semanal").eq("id", data.plano_id).maybeSingle();
+        if (pl && pl.frequencia_semanal !== data.slots.length) {
+          throw new Error(`Plano exige ${pl.frequencia_semanal} dia(s)/horário(s)`);
+        }
+      }
+      for (const s of data.slots) {
+        const h = parseInt(s.hora.slice(0, 2), 10);
+        const ehManha = h < 12;
+        if ((data.turno === "manha") !== ehManha) {
+          throw new Error(`Horário ${s.hora} não é do turno ${data.turno === "manha" ? "manhã" : "tarde/noite"}`);
+        }
+        const { count } = await supabaseAdmin.from("horarios_fixos")
+          .select("id", { count: "exact", head: true })
+          .eq("dia_semana", s.dia_semana).eq("hora", s.hora);
+        if ((count ?? 0) >= 4) throw new Error(`Slot ${s.dia_semana}/${s.hora} lotado (4/4)`);
+      }
+      const rows = data.slots.map((s) => ({
+        aluno_id: alunoRow!.id, dia_semana: s.dia_semana, hora: s.hora, professor_id: null,
+      }));
+      const { error: e3 } = await supabaseAdmin.from("horarios_fixos").insert(rows);
+      if (e3) throw e3;
+    }
+    return { ok: true, tempPassword: senhaPadrao };
+  });
+
+// Hard delete: remove TUDO do aluno (anexos, horários, presenças, etc + auth user)
+export const excluirAlunoPermanente = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ aluno_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: aluno } = await supabaseAdmin.from("alunos").select("profile_id").eq("id", data.aluno_id).maybeSingle();
+    if (!aluno) throw new Error("Aluno não encontrado");
+    // anexos: storage + linha
+    const { data: anexos } = await supabaseAdmin.from("aluno_anexos").select("id, file_path").eq("aluno_id", data.aluno_id);
+    if (anexos && anexos.length) {
+      await supabaseAdmin.storage.from("aluno-anexos").remove(anexos.map((a: any) => a.file_path));
+      await supabaseAdmin.from("aluno_anexos").delete().eq("aluno_id", data.aluno_id);
+    }
+    await supabaseAdmin.from("horarios_fixos").delete().eq("aluno_id", data.aluno_id);
+    await supabaseAdmin.from("presencas").delete().eq("aluno_id", data.aluno_id);
+    await supabaseAdmin.from("reposicoes").delete().eq("aluno_id", data.aluno_id);
+    await supabaseAdmin.from("fichas_evolucao").delete().eq("aluno_id", data.aluno_id);
+    await supabaseAdmin.from("observacoes_aluno").delete().eq("aluno_id", data.aluno_id);
+    await supabaseAdmin.from("pagamentos").delete().eq("aluno_id", data.aluno_id);
+    await supabaseAdmin.from("alunos").delete().eq("id", data.aluno_id);
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", aluno.profile_id);
+    await supabaseAdmin.auth.admin.deleteUser(aluno.profile_id);
+    return { ok: true };
   });
 
 export const seedAlunosIniciais = createServerFn({ method: "POST" })
@@ -592,9 +648,10 @@ export const listarHorariosTodos = createServerFn({ method: "GET" })
     await assertAdmin(context.supabase, context.userId);
     const { data } = await context.supabase
       .from("horarios_fixos")
-      .select("*, aluno:alunos(profile:profiles(nome)), professor:professores(profile:profiles(nome))")
+      .select("*, aluno:alunos!inner(id, deleted_at, profile:profiles(nome)), professor:professores(profile:profiles(nome))")
+      .is("aluno.deleted_at", null)
       .order("dia_semana").order("hora");
-    return data ?? [];
+    return (data ?? []).filter((h: any) => h.aluno);
   });
 
 export const relatorios = createServerFn({ method: "GET" })

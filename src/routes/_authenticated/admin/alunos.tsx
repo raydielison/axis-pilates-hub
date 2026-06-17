@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  atualizarAluno, baixarAnexoAdmin, criarAluno, excluirAluno, excluirAnexoAluno,
+  atualizarAluno, baixarAnexoAdmin, criarAluno, excluirAluno, excluirAlunoPermanente, excluirAnexoAluno,
   listarAlunosAdmin, listarAlunosExcluidos, listarAnexosAluno, listarPlanos,
   reativarAluno, seedAlunosIniciais, uploadAnexoAluno,
 } from "@/lib/admin.functions";
@@ -37,17 +37,21 @@ function AlunosAdmin() {
   const { data: planos } = useQuery({ queryKey: ["planos"], queryFn: () => fnPlanos() });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "", turno: "manha" as "manha" | "tarde_noite" });
+  const [slots, setSlots] = useState<Array<{ dia_semana: number; hora: string }>>([]);
+  const planoSel = (planos ?? []).find((p: any) => p.id === form.plano_id);
+  const freq = planoSel?.frequencia_semanal ?? 0;
 
   const mNew = useMutation({
-    mutationFn: () => fnNew({ data: { ...form, plano_id: form.plano_id || null } as any }),
+    mutationFn: () => fnNew({ data: { ...form, plano_id: form.plano_id || null, slots } as any }),
     onSuccess: (res: any) => {
       toast.success("Aluno criado", {
-        description: `Senha temporária: ${res?.tempPassword ?? "(enviada)"} — peça para o aluno alterá-la no primeiro acesso.`,
+        description: `Senha padrão: ${res?.tempPassword ?? "axis1234"} — peça para o aluno alterá-la no primeiro acesso.`,
         duration: 15000,
       });
       qc.invalidateQueries({ queryKey: ["admin-alunos"] });
       setOpen(false);
       setForm({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "", turno: "manha" });
+      setSlots([]);
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
@@ -84,6 +88,16 @@ function AlunosAdmin() {
       qc.invalidateQueries({ queryKey: ["admin-alunos-excluidos"] });
     },
     onError: (e: Error) => toast.error("Erro ao reativar", { description: e.message }),
+  });
+
+  const fnPermDel = useServerFn(excluirAlunoPermanente);
+  const mPermDel = useMutation({
+    mutationFn: (aluno_id: string) => fnPermDel({ data: { aluno_id } }),
+    onSuccess: () => {
+      toast.success("Aluno excluído permanentemente");
+      qc.invalidateQueries({ queryKey: ["admin-alunos-excluidos"] });
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
 
   return (
@@ -129,8 +143,18 @@ function AlunosAdmin() {
                       </Select>
                     </div>
                   </div>
-                  <Button className="w-full bg-primary hover:bg-primary/90" disabled={mNew.isPending} onClick={() => mNew.mutate()}>
-                    {mNew.isPending ? "Criando…" : "Criar aluno"}
+                  {freq > 0 && (
+                    <SlotsPicker
+                      freq={freq}
+                      turno={form.turno}
+                      slots={slots}
+                      onChange={setSlots}
+                    />
+                  )}
+                  <Button className="w-full bg-primary hover:bg-primary/90"
+                    disabled={mNew.isPending || (freq > 0 && slots.length !== freq)}
+                    onClick={() => mNew.mutate()}>
+                    {mNew.isPending ? "Criando…" : freq > 0 && slots.length !== freq ? `Selecione ${freq} horário(s)` : "Criar aluno"}
                   </Button>
                 </div>
               </DialogContent>
@@ -226,6 +250,28 @@ function AlunosAdmin() {
                         <Button variant="outline" size="sm" disabled={mReativar.isPending} onClick={() => mReativar.mutate(a.id)}>
                           <RotateCcw className="h-4 w-4 mr-1" />Reativar
                         </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" disabled={mPermDel.isPending}>
+                              <Trash2 className="h-4 w-4 mr-1" />Excluir permanente
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir {a.profile?.nome} permanentemente?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação remove TODOS os dados do aluno: cadastro, anexos, presenças, pagamentos, horários e login.
+                                Não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => mPermDel.mutate(a.id)}>
+                                Excluir permanentemente
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </td>
                   </tr>
@@ -410,5 +456,57 @@ function AnexosSheet({ aluno }: { aluno: any }) {
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+const DIAS_SEM = [
+  { v: 1, l: "Seg" }, { v: 2, l: "Ter" }, { v: 3, l: "Qua" }, { v: 4, l: "Qui" }, { v: 5, l: "Sex" },
+];
+const HORAS_MANHA = ["07:00", "08:00", "09:00", "10:00"];
+const HORAS_TARDE = ["16:00", "17:00", "18:00", "19:00", "20:00", "21:00"];
+
+function SlotsPicker({
+  freq, turno, slots, onChange,
+}: {
+  freq: number; turno: "manha" | "tarde_noite";
+  slots: Array<{ dia_semana: number; hora: string }>;
+  onChange: (s: Array<{ dia_semana: number; hora: string }>) => void;
+}) {
+  const horas = turno === "manha" ? HORAS_MANHA : HORAS_TARDE;
+  const update = (i: number, field: "dia_semana" | "hora", val: string) => {
+    const cp = [...slots];
+    cp[i] = { ...(cp[i] ?? { dia_semana: 1, hora: horas[0] }), [field]: field === "dia_semana" ? Number(val) : val };
+    onChange(cp);
+  };
+  // garantir length = freq
+  if (slots.length !== freq) {
+    const next = Array.from({ length: freq }).map((_, i) => slots[i] ?? { dia_semana: 1, hora: horas[0] });
+    queueMicrotask(() => onChange(next));
+  }
+  return (
+    <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        Dias e horários ({freq}x/semana)
+      </p>
+      {Array.from({ length: freq }).map((_, i) => {
+        const s = slots[i] ?? { dia_semana: 1, hora: horas[0] };
+        return (
+          <div key={i} className="grid grid-cols-2 gap-2">
+            <Select value={String(s.dia_semana)} onValueChange={(v) => update(i, "dia_semana", v)}>
+              <SelectTrigger><SelectValue placeholder="Dia" /></SelectTrigger>
+              <SelectContent>
+                {DIAS_SEM.map((d) => <SelectItem key={d.v} value={String(d.v)}>{d.l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={s.hora} onValueChange={(v) => update(i, "hora", v)}>
+              <SelectTrigger><SelectValue placeholder="Hora" /></SelectTrigger>
+              <SelectContent>
+                {horas.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      })}
+    </div>
   );
 }

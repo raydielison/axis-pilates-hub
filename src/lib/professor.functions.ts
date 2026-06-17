@@ -43,10 +43,11 @@ export const agendaSemana = createServerFn({ method: "GET" })
     await assertProfessorOrAdmin(context.supabase, context.userId);
     const { data } = await context.supabase
       .from("horarios_fixos")
-      .select("dia_semana, hora, id, aluno:alunos(id, status, turno, profile:profiles(nome))")
+      .select("dia_semana, hora, id, aluno:alunos!inner(id, status, turno, deleted_at, profile:profiles(nome))")
+      .is("aluno.deleted_at", null)
       .order("dia_semana")
       .order("hora");
-    return data ?? [];
+    return (data ?? []).filter((h: any) => h.aluno);
   });
 
 export const listarAlunosProfessor = createServerFn({ method: "GET" })
