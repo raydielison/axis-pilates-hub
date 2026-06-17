@@ -614,6 +614,49 @@ export const removerHorarioFixo = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const listarHorariosAluno = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ aluno_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: rows, error } = await context.supabase
+      .from("horarios_fixos").select("id, dia_semana, hora").eq("aluno_id", data.aluno_id)
+      .order("dia_semana").order("hora");
+    if (error) throw error;
+    return rows ?? [];
+  });
+
+export const setHorariosAluno = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      aluno_id: z.string().uuid(),
+      slots: z.array(z.object({
+        dia_semana: z.number().int().min(1).max(5),
+        hora: z.string().regex(/^\d{2}:\d{2}$/),
+      })),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // valida capacidade (excluindo os próprios horários atuais)
+    for (const s of data.slots) {
+      const { count } = await supabaseAdmin.from("horarios_fixos")
+        .select("id", { count: "exact", head: true })
+        .eq("dia_semana", s.dia_semana).eq("hora", s.hora).neq("aluno_id", data.aluno_id);
+      if ((count ?? 0) >= 4) throw new Error(`Horário ${s.hora} lotado (4/4)`);
+    }
+    const { error: eDel } = await supabaseAdmin.from("horarios_fixos").delete().eq("aluno_id", data.aluno_id);
+    if (eDel) throw eDel;
+    if (data.slots.length) {
+      const rows = data.slots.map((s) => ({ aluno_id: data.aluno_id, dia_semana: s.dia_semana, hora: s.hora }));
+      const { error: eIns } = await supabaseAdmin.from("horarios_fixos").insert(rows as any);
+      if (eIns) throw eIns;
+    }
+    return { ok: true };
+  });
+
 export const listarAparelhos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
