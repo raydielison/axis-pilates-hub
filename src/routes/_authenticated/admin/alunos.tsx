@@ -458,3 +458,55 @@ function AnexosSheet({ aluno }: { aluno: any }) {
     </Sheet>
   );
 }
+
+const DIAS_SEM = [
+  { v: 1, l: "Seg" }, { v: 2, l: "Ter" }, { v: 3, l: "Qua" }, { v: 4, l: "Qui" }, { v: 5, l: "Sex" },
+];
+const HORAS_MANHA = ["07:00", "08:00", "09:00", "10:00"];
+const HORAS_TARDE = ["16:00", "17:00", "18:00", "19:00", "20:00", "21:00"];
+
+function SlotsPicker({
+  freq, turno, slots, onChange,
+}: {
+  freq: number; turno: "manha" | "tarde_noite";
+  slots: Array<{ dia_semana: number; hora: string }>;
+  onChange: (s: Array<{ dia_semana: number; hora: string }>) => void;
+}) {
+  const horas = turno === "manha" ? HORAS_MANHA : HORAS_TARDE;
+  const update = (i: number, field: "dia_semana" | "hora", val: string) => {
+    const cp = [...slots];
+    cp[i] = { ...(cp[i] ?? { dia_semana: 1, hora: horas[0] }), [field]: field === "dia_semana" ? Number(val) : val };
+    onChange(cp);
+  };
+  // garantir length = freq
+  if (slots.length !== freq) {
+    const next = Array.from({ length: freq }).map((_, i) => slots[i] ?? { dia_semana: 1, hora: horas[0] });
+    queueMicrotask(() => onChange(next));
+  }
+  return (
+    <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        Dias e horários ({freq}x/semana)
+      </p>
+      {Array.from({ length: freq }).map((_, i) => {
+        const s = slots[i] ?? { dia_semana: 1, hora: horas[0] };
+        return (
+          <div key={i} className="grid grid-cols-2 gap-2">
+            <Select value={String(s.dia_semana)} onValueChange={(v) => update(i, "dia_semana", v)}>
+              <SelectTrigger><SelectValue placeholder="Dia" /></SelectTrigger>
+              <SelectContent>
+                {DIAS_SEM.map((d) => <SelectItem key={d.v} value={String(d.v)}>{d.l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={s.hora} onValueChange={(v) => update(i, "hora", v)}>
+              <SelectTrigger><SelectValue placeholder="Hora" /></SelectTrigger>
+              <SelectContent>
+                {horas.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
