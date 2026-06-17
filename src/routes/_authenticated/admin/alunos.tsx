@@ -3,8 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   atualizarAluno, baixarAnexoAdmin, criarAluno, excluirAluno, excluirAlunoPermanente, excluirAnexoAluno,
-  listarAlunosAdmin, listarAlunosExcluidos, listarAnexosAluno, listarPlanos,
-  reativarAluno, seedAlunosIniciais, uploadAnexoAluno,
+  listarAlunosAdmin, listarAlunosExcluidos, listarAnexosAluno, listarHorariosAluno, listarPlanos,
+  reativarAluno, seedAlunosIniciais, setHorariosAluno, uploadAnexoAluno,
 } from "@/lib/admin.functions";
 import { PageHeader } from "@/components/ui-helpers";
 import { Button } from "@/components/ui/button";
