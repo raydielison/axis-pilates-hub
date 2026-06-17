@@ -290,6 +290,8 @@ function AlunosAdmin() {
 
 function EditarAlunoDialog({ aluno, planos }: { aluno: any; planos: any[] }) {
   const fnSave = useServerFn(atualizarAluno);
+  const fnListSlots = useServerFn(listarHorariosAluno);
+  const fnSetSlots = useServerFn(setHorariosAluno);
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({
@@ -301,15 +303,36 @@ function EditarAlunoDialog({ aluno, planos }: { aluno: any; planos: any[] }) {
     cpf: aluno.cpf ?? "",
     plano_id: aluno.plano_id ?? "",
     status: aluno.status === "excluido" ? "ativo" : aluno.status,
-    turno: aluno.turno ?? "manha",
+    turno: (aluno.turno ?? "manha") as "manha" | "tarde_noite",
+  });
+  const [slots, setSlots] = useState<Array<{ dia_semana: number; hora: string }>>([]);
+  const planoSel = planos.find((p: any) => p.id === f.plano_id);
+  const freq = planoSel?.frequencia_semanal ?? 0;
+
+  useQuery({
+    queryKey: ["aluno-horarios", aluno.id],
+    queryFn: async () => {
+      const rows = await fnListSlots({ data: { aluno_id: aluno.id } });
+      setSlots(rows.map((r: any) => ({ dia_semana: r.dia_semana, hora: String(r.hora).slice(0, 5) })));
+      return rows;
+    },
+    enabled: open,
   });
 
   const m = useMutation({
-    mutationFn: () => fnSave({ data: { aluno_id: aluno.id, ...f, plano_id: f.plano_id || null } as any }),
+    mutationFn: async () => {
+      await fnSave({ data: { aluno_id: aluno.id, ...f, plano_id: f.plano_id || null } as any });
+      if (freq > 0) {
+        await fnSetSlots({ data: { aluno_id: aluno.id, slots: slots.slice(0, freq) } });
+      }
+    },
     onSuccess: () => {
       toast.success("Aluno atualizado");
       qc.invalidateQueries({ queryKey: ["admin-alunos"] });
       qc.invalidateQueries({ queryKey: ["admin-alunos-excluidos"] });
+      qc.invalidateQueries({ queryKey: ["admin-agenda"] });
+      qc.invalidateQueries({ queryKey: ["prof-agenda"] });
+      qc.invalidateQueries({ queryKey: ["aluno-horarios", aluno.id] });
       setOpen(false);
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
@@ -353,7 +376,7 @@ function EditarAlunoDialog({ aluno, planos }: { aluno: any; planos: any[] }) {
           </div>
           <div>
             <Label>Turno</Label>
-            <Select value={f.turno} onValueChange={(v: any) => setF({ ...f, turno: v })}>
+            <Select value={f.turno} onValueChange={(v: any) => { setF({ ...f, turno: v }); setSlots([]); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="manha">Manhã</SelectItem>
@@ -361,8 +384,13 @@ function EditarAlunoDialog({ aluno, planos }: { aluno: any; planos: any[] }) {
               </SelectContent>
             </Select>
           </div>
-          <Button className="w-full bg-primary hover:bg-primary/90" disabled={m.isPending} onClick={() => m.mutate()}>
-            {m.isPending ? "Salvando…" : "Salvar alterações"}
+          {freq > 0 && (
+            <SlotsPicker freq={freq} turno={f.turno} slots={slots} onChange={setSlots} />
+          )}
+          <Button className="w-full bg-primary hover:bg-primary/90"
+            disabled={m.isPending || (freq > 0 && slots.length !== freq)}
+            onClick={() => m.mutate()}>
+            {m.isPending ? "Salvando…" : freq > 0 && slots.length !== freq ? `Selecione ${freq} horário(s)` : "Salvar alterações"}
           </Button>
         </div>
       </DialogContent>
