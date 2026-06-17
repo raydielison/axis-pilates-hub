@@ -37,17 +37,21 @@ function AlunosAdmin() {
   const { data: planos } = useQuery({ queryKey: ["planos"], queryFn: () => fnPlanos() });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "", turno: "manha" as "manha" | "tarde_noite" });
+  const [slots, setSlots] = useState<Array<{ dia_semana: number; hora: string }>>([]);
+  const planoSel = (planos ?? []).find((p: any) => p.id === form.plano_id);
+  const freq = planoSel?.frequencia_semanal ?? 0;
 
   const mNew = useMutation({
-    mutationFn: () => fnNew({ data: { ...form, plano_id: form.plano_id || null } as any }),
+    mutationFn: () => fnNew({ data: { ...form, plano_id: form.plano_id || null, slots } as any }),
     onSuccess: (res: any) => {
       toast.success("Aluno criado", {
-        description: `Senha temporária: ${res?.tempPassword ?? "(enviada)"} — peça para o aluno alterá-la no primeiro acesso.`,
+        description: `Senha padrão: ${res?.tempPassword ?? "axis1234"} — peça para o aluno alterá-la no primeiro acesso.`,
         duration: 15000,
       });
       qc.invalidateQueries({ queryKey: ["admin-alunos"] });
       setOpen(false);
       setForm({ nome: "", email: "", cpf: "", telefone: "", endereco: "", plano_id: "", turno: "manha" });
+      setSlots([]);
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
