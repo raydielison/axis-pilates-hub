@@ -10,7 +10,9 @@ import { listarAlunosProfessor } from "@/lib/professor.functions";
 import { upsertHorarioFixo, removerHorarioFixo } from "@/lib/admin.functions";
 
 const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex"];
-const HORAS = ["07:00","08:00","09:00","10:00","16:00","17:00","18:00","19:00","20:00","21:00"];
+const HORAS_ALL = ["07:00","08:00","09:00","10:00","16:00","17:00","18:00","19:00","20:00","21:00"];
+const HORAS_MANHA = ["07:00","08:00","09:00","10:00"];
+const HORAS_TARDE = ["16:00","17:00","18:00","19:00","20:00","21:00"];
 
 type HF = { id: string; dia_semana: number; hora: string; aluno?: { id: string; profile?: { nome: string }; turno?: string } };
 
@@ -18,12 +20,15 @@ export function AgendaGrid({
   horarios,
   invalidateKeys,
   editable = false,
+  turno = null,
 }: {
   horarios: HF[];
   invalidateKeys: string[][];
   editable?: boolean;
+  turno?: "manha" | "tarde_noite" | null;
 }) {
   const qc = useQueryClient();
+  const HORAS = turno === "manha" ? HORAS_MANHA : turno === "tarde_noite" ? HORAS_TARDE : HORAS_ALL;
   const grid: Record<string, HF[]> = {};
   for (const h of horarios ?? []) {
     const k = `${h.dia_semana}-${String(h.hora).slice(0, 5)}`;
