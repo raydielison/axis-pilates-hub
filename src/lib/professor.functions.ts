@@ -40,14 +40,20 @@ export const dashboardProfessor = createServerFn({ method: "GET" })
 export const agendaSemana = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertProfessorOrAdmin(context.supabase, context.userId);
-    const { data } = await context.supabase
+    const roles = await assertProfessorOrAdmin(context.supabase, context.userId);
+    let turno: "manha" | "tarde_noite" | null = null;
+    if (!roles.includes("admin")) {
+      const prof = await meuProfessor(context.supabase, context.userId);
+      if (!prof) return { horarios: [], turno: null };
+      turno = (prof as any).turno;
+    }
+    let q = context.supabase
       .from("horarios_fixos")
       .select("dia_semana, hora, id, aluno:alunos!inner(id, status, turno, deleted_at, profile:profiles(nome))")
-      .is("aluno.deleted_at", null)
-      .order("dia_semana")
-      .order("hora");
-    return (data ?? []).filter((h: any) => h.aluno);
+      .is("aluno.deleted_at", null);
+    if (turno) q = q.eq("aluno.turno", turno);
+    const { data } = await q.order("dia_semana").order("hora");
+    return { horarios: (data ?? []).filter((h: any) => h.aluno), turno };
   });
 
 export const listarAlunosProfessor = createServerFn({ method: "GET" })
