@@ -143,8 +143,18 @@ function AlunosAdmin() {
                       </Select>
                     </div>
                   </div>
-                  <Button className="w-full bg-primary hover:bg-primary/90" disabled={mNew.isPending} onClick={() => mNew.mutate()}>
-                    {mNew.isPending ? "Criando…" : "Criar aluno"}
+                  {freq > 0 && (
+                    <SlotsPicker
+                      freq={freq}
+                      turno={form.turno}
+                      slots={slots}
+                      onChange={setSlots}
+                    />
+                  )}
+                  <Button className="w-full bg-primary hover:bg-primary/90"
+                    disabled={mNew.isPending || (freq > 0 && slots.length !== freq)}
+                    onClick={() => mNew.mutate()}>
+                    {mNew.isPending ? "Criando…" : freq > 0 && slots.length !== freq ? `Selecione ${freq} horário(s)` : "Criar aluno"}
                   </Button>
                 </div>
               </DialogContent>
