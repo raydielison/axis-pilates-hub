@@ -250,6 +250,28 @@ function AlunosAdmin() {
                         <Button variant="outline" size="sm" disabled={mReativar.isPending} onClick={() => mReativar.mutate(a.id)}>
                           <RotateCcw className="h-4 w-4 mr-1" />Reativar
                         </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" disabled={mPermDel.isPending}>
+                              <Trash2 className="h-4 w-4 mr-1" />Excluir permanente
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir {a.profile?.nome} permanentemente?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação remove TODOS os dados do aluno: cadastro, anexos, presenças, pagamentos, horários e login.
+                                Não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => mPermDel.mutate(a.id)}>
+                                Excluir permanentemente
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </td>
                   </tr>
