@@ -648,9 +648,10 @@ export const listarHorariosTodos = createServerFn({ method: "GET" })
     await assertAdmin(context.supabase, context.userId);
     const { data } = await context.supabase
       .from("horarios_fixos")
-      .select("*, aluno:alunos(profile:profiles(nome)), professor:professores(profile:profiles(nome))")
+      .select("*, aluno:alunos!inner(id, deleted_at, profile:profiles(nome)), professor:professores(profile:profiles(nome))")
+      .is("aluno.deleted_at", null)
       .order("dia_semana").order("hora");
-    return data ?? [];
+    return (data ?? []).filter((h: any) => h.aluno);
   });
 
 export const relatorios = createServerFn({ method: "GET" })
