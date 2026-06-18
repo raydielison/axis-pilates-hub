@@ -154,13 +154,25 @@ export const meuFinanceiro = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const aluno = await getMyAluno(context.supabase, context.userId);
-    if (!aluno) return { aluno: null, pagamentos: [] };
-    const { data } = await context.supabase
-      .from("pagamentos")
-      .select("*")
-      .eq("aluno_id", aluno.id)
-      .order("data_vencimento", { ascending: false });
-    return { aluno, pagamentos: data ?? [] };
+    if (!aluno) return { aluno: null, pagamentos: [], proximoVencimento: null, professor: null };
+    const [{ data: pagamentos }, { data: hor }] = await Promise.all([
+      context.supabase.from("pagamentos").select("*").eq("aluno_id", aluno.id)
+        .order("mes_referencia", { ascending: false }),
+      context.supabase.from("horarios_fixos")
+        .select("professor:professores(crefito, profile:profiles(nome))")
+        .eq("aluno_id", aluno.id).limit(1).maybeSingle(),
+    ]);
+
+    // Próximo vencimento: dia 10 do mês corrente se ainda não pago, senão dia 10 do mês seguinte
+    const hoje = new Date();
+    const mesISO = hoje.toISOString().slice(0, 7) + "-01";
+    const pagoMesAtual = (pagamentos ?? []).find((p: any) => p.mes_referencia?.slice(0, 7) === mesISO.slice(0, 7) && p.status === "pago");
+    const base = new Date(hoje.getFullYear(), hoje.getMonth(), 10);
+    if (pagoMesAtual || hoje.getDate() > 10) base.setMonth(base.getMonth() + 1);
+    const proximoVencimento = base.toISOString().slice(0, 10);
+
+    const professor = (hor as any)?.professor ?? null;
+    return { aluno, pagamentos: pagamentos ?? [], proximoVencimento, professor };
   });
 
 export const atualizarPerfil = createServerFn({ method: "POST" })
