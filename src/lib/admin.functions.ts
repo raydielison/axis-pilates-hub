@@ -824,7 +824,7 @@ export const relatorios = createServerFn({ method: "GET" })
     if (hoje.getDate() >= 11) {
       const { data: ativos } = await context.supabase
         .from("alunos").select("id, profile:profiles(nome), plano:planos(valor)")
-        .is("deleted_at", null).neq("status", "inativo");
+        .is("deleted_at", null).eq("status", "ativo");
       const { data: pagosMes } = await context.supabase
         .from("pagamentos").select("aluno_id").eq("mes_referencia", mesISO).eq("status", "pago");
       const pagosSet = new Set((pagosMes ?? []).map((p: any) => p.aluno_id));
