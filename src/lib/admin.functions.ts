@@ -816,8 +816,20 @@ export const relatorios = createServerFn({ method: "GET" })
     const receitaAnual = Object.values(porMes).reduce((a, b) => a + b, 0);
     const { count: presencas } = await context.supabase.from("presencas").select("id", { count: "exact", head: true });
     const { count: reposicoes } = await context.supabase.from("reposicoes").select("id", { count: "exact", head: true });
-    const { data: inadimplentes } = await context.supabase
-      .from("alunos").select("id, profile:profiles(nome)").eq("status", "suspenso");
+    // Inadimplentes automáticos: alunos ativos sem pagamento pago do mês corrente
+    // (considera somente após o dia 10 — antes disso não é inadimplência).
+    const hoje = new Date();
+    const mesISO = hoje.toISOString().slice(0, 7) + "-01";
+    let inadimplentes: any[] = [];
+    if (hoje.getDate() >= 11) {
+      const { data: ativos } = await context.supabase
+        .from("alunos").select("id, profile:profiles(nome), plano:planos(valor)")
+        .is("deleted_at", null).neq("status", "inativo");
+      const { data: pagosMes } = await context.supabase
+        .from("pagamentos").select("aluno_id").eq("mes_referencia", mesISO).eq("status", "pago");
+      const pagosSet = new Set((pagosMes ?? []).map((p: any) => p.aluno_id));
+      inadimplentes = (ativos ?? []).filter((a: any) => !pagosSet.has(a.id));
+    }
     return {
       receitaPorMes: Array.from({ length: 12 }).map((_, i) => ({ mes: i + 1, valor: porMes[i] ?? 0 })),
       receitaAnual, totalPresencas: presencas ?? 0, totalReposicoes: reposicoes ?? 0,
