@@ -15,9 +15,10 @@ export const meuDashboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const aluno = await getMyAluno(context.supabase, context.userId);
-    if (!aluno) return { aluno: null, proximaAula: null, pagamentoAtual: null, avisos: [] };
-    const hojeISO = new Date().toISOString().slice(0, 10);
-    const [{ data: proximaAula }, { data: pagamentoAtual }, { data: avisos }] = await Promise.all([
+    if (!aluno) return { aluno: null, proximaAula: null, pagamentoAtual: null, avisos: [], inadimplente: false };
+    const hoje = new Date();
+    const mesAtual = hoje.toISOString().slice(0, 7) + "-01";
+    const [{ data: horarios }, { data: pagamentoAtual }, { data: avisos }] = await Promise.all([
       context.supabase
         .from("horarios_fixos")
         .select("dia_semana, hora")
@@ -27,9 +28,7 @@ export const meuDashboard = createServerFn({ method: "GET" })
         .from("pagamentos")
         .select("*")
         .eq("aluno_id", aluno.id)
-        .gte("data_vencimento", hojeISO.slice(0, 7) + "-01")
-        .order("data_vencimento", { ascending: true })
-        .limit(1)
+        .eq("mes_referencia", mesAtual)
         .maybeSingle(),
       context.supabase
         .from("avisos")
@@ -38,7 +37,24 @@ export const meuDashboard = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false })
         .limit(5),
     ]);
-    return { aluno, proximaAula, pagamentoAtual, avisos: avisos ?? [] };
+
+    let proximaAula: { dia_semana: number; hora: string; em_dias: number } | null = null;
+    const dowHoje = hoje.getDay();
+    const horaAtual = hoje.toTimeString().slice(0, 5);
+    if (horarios && horarios.length) {
+      let bestDelta = 99; let best: any = null;
+      for (const h of horarios as any[]) {
+        const hora = String(h.hora).slice(0, 5);
+        let delta = h.dia_semana - dowHoje;
+        if (delta < 0 || (delta === 0 && hora <= horaAtual)) delta += 7;
+        if (delta < bestDelta) { bestDelta = delta; best = { dia_semana: h.dia_semana, hora }; }
+      }
+      if (best) proximaAula = { ...best, em_dias: bestDelta };
+    }
+
+    const inadimplente = hoje.getDate() >= 11 && (!pagamentoAtual || pagamentoAtual.status !== "pago");
+
+    return { aluno, proximaAula, pagamentoAtual, avisos: avisos ?? [], inadimplente };
   });
 
 export const meuHorario = createServerFn({ method: "GET" })
@@ -138,13 +154,25 @@ export const meuFinanceiro = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const aluno = await getMyAluno(context.supabase, context.userId);
-    if (!aluno) return { aluno: null, pagamentos: [] };
-    const { data } = await context.supabase
-      .from("pagamentos")
-      .select("*")
-      .eq("aluno_id", aluno.id)
-      .order("data_vencimento", { ascending: false });
-    return { aluno, pagamentos: data ?? [] };
+    if (!aluno) return { aluno: null, pagamentos: [], proximoVencimento: null, professor: null };
+    const [{ data: pagamentos }, { data: hor }] = await Promise.all([
+      context.supabase.from("pagamentos").select("*").eq("aluno_id", aluno.id)
+        .order("mes_referencia", { ascending: false }),
+      context.supabase.from("horarios_fixos")
+        .select("professor:professores(crefito, profile:profiles(nome))")
+        .eq("aluno_id", aluno.id).limit(1).maybeSingle(),
+    ]);
+
+    // Próximo vencimento: dia 10 do mês corrente se ainda não pago, senão dia 10 do mês seguinte
+    const hoje = new Date();
+    const mesISO = hoje.toISOString().slice(0, 7) + "-01";
+    const pagoMesAtual = (pagamentos ?? []).find((p: any) => p.mes_referencia?.slice(0, 7) === mesISO.slice(0, 7) && p.status === "pago");
+    const base = new Date(hoje.getFullYear(), hoje.getMonth(), 10);
+    if (pagoMesAtual || hoje.getDate() > 10) base.setMonth(base.getMonth() + 1);
+    const proximoVencimento = base.toISOString().slice(0, 10);
+
+    const professor = (hor as any)?.professor ?? null;
+    return { aluno, pagamentos: pagamentos ?? [], proximoVencimento, professor };
   });
 
 export const atualizarPerfil = createServerFn({ method: "POST" })

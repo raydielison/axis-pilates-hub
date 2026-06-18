@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { meuDashboard } from "@/lib/aluno.functions";
 import { KPICard, PageHeader } from "@/components/ui-helpers";
-import { Calendar, Wallet, Bell, CheckCircle2, AlertCircle } from "lucide-react";
+import { Wallet, Bell, CheckCircle2, AlertCircle, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/aluno/")({
   component: AlunoDashboard,
@@ -20,6 +21,11 @@ function AlunoDashboard() {
   const proxima = data?.proximaAula as any;
   const pag = data?.pagamentoAtual as any;
   const avisos = (data?.avisos ?? []) as any[];
+  const inadimplente = !!data?.inadimplente;
+
+  const proximaLabel = proxima
+    ? `${DIAS[proxima.dia_semana]} ${proxima.hora}${proxima.em_dias === 0 ? " (hoje)" : proxima.em_dias === 1 ? " (amanhã)" : ` (em ${proxima.em_dias}d)`}`
+    : "—";
 
   return (
     <div>
@@ -28,8 +34,24 @@ function AlunoDashboard() {
         subtitle="Bem-vindo ao seu painel"
       />
 
+      {inadimplente && (
+        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-700 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-amber-900">Mensalidade em aberto</p>
+            <p className="text-sm text-amber-800">
+              Identificamos que a mensalidade deste mês ainda não foi paga. Para evitar a suspensão
+              das aulas, regularize o quanto antes diretamente no studio.
+            </p>
+            <Link to="/aluno/financeiro" className="inline-block mt-2 text-sm font-medium text-amber-900 underline">
+              Ver financeiro
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <KPICard label="Próxima aula" value={proxima ? `${DIAS[proxima.dia_semana]} ${String(proxima.hora).slice(0,5)}` : "—"} accent />
+        <KPICard label="Próxima aula" value={proximaLabel} accent />
         <KPICard label="Plano" value={aluno?.plano?.nome?.replace("Plano ", "") ?? "—"} hint={aluno?.plano ? `R$ ${Number(aluno.plano.valor).toFixed(2)}` : undefined} />
         <KPICard label="Status" value={aluno?.status === "ativo" ? "Ativo" : "Suspenso"} hint={aluno?.status === "ativo" ? "Tudo certo" : "Verifique financeiro"} />
         <KPICard label="Reposições" value={aluno?.saldo_reposicoes ?? 0} hint="créditos disponíveis" />

@@ -110,28 +110,131 @@ export const listarPagamentos = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+// Lista todos alunos ativos com o status do pagamento do mês selecionado
+// (cria placeholder em memória quando não existe ainda — não grava até registrar).
+export const financeiroMes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      ano: z.number().int().min(2020).max(2100),
+      mes: z.number().int().min(1).max(12),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const mesISO = `${data.ano}-${String(data.mes).padStart(2, "0")}-01`;
+    const vencISO = `${data.ano}-${String(data.mes).padStart(2, "0")}-10`;
+    const { data: alunos } = await context.supabase
+      .from("alunos")
+      .select("id, status, plano:planos(id, nome, valor), profile:profiles(nome, email)")
+      .is("deleted_at", null);
+    const { data: pagamentos } = await context.supabase
+      .from("pagamentos")
+      .select("*")
+      .eq("mes_referencia", mesISO);
+    const byAluno: Record<string, any> = {};
+    for (const p of pagamentos ?? []) byAluno[p.aluno_id] = p;
+
+    const hoje = new Date();
+    const linhas = (alunos ?? []).map((a: any) => {
+      const p = byAluno[a.id];
+      let status: "pago" | "pendente" | "atrasado" = "pendente";
+      if (p) status = p.status;
+      else if (hoje > new Date(vencISO + "T23:59:59")) status = "atrasado";
+      return {
+        aluno_id: a.id,
+        aluno_nome: a.profile?.nome,
+        aluno_email: a.profile?.email,
+        plano: a.plano,
+        pagamento_id: p?.id ?? null,
+        valor: Number(p?.valor ?? a.plano?.valor ?? 0),
+        forma: p?.forma ?? null,
+        data_pagamento: p?.data_pagamento ?? null,
+        status,
+        mes_referencia: mesISO,
+        data_vencimento: vencISO,
+      };
+    });
+    return { linhas, ano: data.ano, mes: data.mes };
+  });
+
+// Registra/atualiza pagamento para aluno+mês. Cria a linha se não existir.
 export const registrarPagamento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({
-      pagamento_id: z.string().uuid(),
+      aluno_id: z.string().uuid().optional(),
+      pagamento_id: z.string().uuid().optional(),
+      mes_referencia: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       forma: z.enum(["pix", "cartao", "dinheiro"]),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const hoje = new Date().toISOString().slice(0, 10);
-    const { data: pag, error: e1 } = await context.supabase
-      .from("pagamentos")
-      .update({ status: "pago", forma: data.forma, data_pagamento: hoje })
-      .eq("id", data.pagamento_id)
-      .select("aluno_id")
-      .maybeSingle();
-    if (e1) throw e1;
-    if (pag?.aluno_id) {
-      await context.supabase.from("alunos").update({ status: "ativo" }).eq("id", pag.aluno_id).eq("status", "suspenso");
+    let alunoId = data.aluno_id ?? null;
+
+    if (data.pagamento_id) {
+      const { data: pag, error } = await context.supabase
+        .from("pagamentos")
+        .update({ status: "pago", forma: data.forma, data_pagamento: hoje })
+        .eq("id", data.pagamento_id)
+        .select("aluno_id").maybeSingle();
+      if (error) throw error;
+      alunoId = pag?.aluno_id ?? alunoId;
+    } else {
+      if (!alunoId || !data.mes_referencia) throw new Error("aluno_id e mes_referencia obrigatórios");
+      const { data: aluno } = await context.supabase
+        .from("alunos").select("plano:planos(valor)").eq("id", alunoId).maybeSingle();
+      const valor = Number((aluno as any)?.plano?.valor ?? 0);
+      const venc = data.mes_referencia.slice(0, 7) + "-10";
+      const { error } = await context.supabase.from("pagamentos").insert({
+        aluno_id: alunoId,
+        mes_referencia: data.mes_referencia,
+        data_vencimento: venc,
+        data_pagamento: hoje,
+        valor,
+        forma: data.forma,
+        status: "pago",
+      });
+      if (error) throw error;
+    }
+
+    if (alunoId) {
+      await context.supabase.from("alunos").update({ status: "ativo" })
+        .eq("id", alunoId).eq("status", "suspenso");
     }
     return { ok: true };
+  });
+
+// Dados completos para emitir recibo de UM pagamento (admin)
+export const dadosReciboAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ pagamento_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: p, error } = await context.supabase
+      .from("pagamentos")
+      .select("id, mes_referencia, valor, data_pagamento, forma, aluno:alunos(id, profile:profiles(nome, email))")
+      .eq("id", data.pagamento_id).maybeSingle();
+    if (error) throw error;
+    if (!p) throw new Error("Pagamento não encontrado");
+    const alunoId = (p as any).aluno?.id;
+    const { data: hor } = await context.supabase
+      .from("horarios_fixos")
+      .select("professor:professores(crefito, profile:profiles(nome))")
+      .eq("aluno_id", alunoId).limit(1).maybeSingle();
+    return {
+      recibo_id: (p as any).id,
+      mes_referencia: (p as any).mes_referencia,
+      valor: Number((p as any).valor),
+      data_pagamento: (p as any).data_pagamento,
+      forma: (p as any).forma,
+      aluno_nome: (p as any).aluno?.profile?.nome ?? "",
+      aluno_email: (p as any).aluno?.profile?.email ?? null,
+      professor_nome: (hor as any)?.professor?.profile?.nome ?? null,
+      crefito: (hor as any)?.professor?.crefito ?? null,
+    };
   });
 
 export const criarAluno = createServerFn({ method: "POST" })
@@ -713,8 +816,20 @@ export const relatorios = createServerFn({ method: "GET" })
     const receitaAnual = Object.values(porMes).reduce((a, b) => a + b, 0);
     const { count: presencas } = await context.supabase.from("presencas").select("id", { count: "exact", head: true });
     const { count: reposicoes } = await context.supabase.from("reposicoes").select("id", { count: "exact", head: true });
-    const { data: inadimplentes } = await context.supabase
-      .from("alunos").select("id, profile:profiles(nome)").eq("status", "suspenso");
+    // Inadimplentes automáticos: alunos ativos sem pagamento pago do mês corrente
+    // (considera somente após o dia 10 — antes disso não é inadimplência).
+    const hoje = new Date();
+    const mesISO = hoje.toISOString().slice(0, 7) + "-01";
+    let inadimplentes: any[] = [];
+    if (hoje.getDate() >= 11) {
+      const { data: ativos } = await context.supabase
+        .from("alunos").select("id, profile:profiles(nome), plano:planos(valor)")
+        .is("deleted_at", null).eq("status", "ativo");
+      const { data: pagosMes } = await context.supabase
+        .from("pagamentos").select("aluno_id").eq("mes_referencia", mesISO).eq("status", "pago");
+      const pagosSet = new Set((pagosMes ?? []).map((p: any) => p.aluno_id));
+      inadimplentes = (ativos ?? []).filter((a: any) => !pagosSet.has(a.id));
+    }
     return {
       receitaPorMes: Array.from({ length: 12 }).map((_, i) => ({ mes: i + 1, valor: porMes[i] ?? 0 })),
       receitaAnual, totalPresencas: presencas ?? 0, totalReposicoes: reposicoes ?? 0,
