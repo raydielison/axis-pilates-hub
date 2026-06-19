@@ -246,6 +246,28 @@ export const baixarMeuAnexo = createServerFn({ method: "POST" })
 export const gradeCompleta = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    // Aluno vê apenas a grade do seu turno cadastrado.
+    const { data: aluno } = await context.supabase
+      .from("alunos").select("id, turno").eq("profile_id", context.userId).maybeSingle();
+    const turno = (aluno as any)?.turno ?? null;
+    let q = context.supabase
+      .from("horarios_fixos")
+      .select("id, dia_semana, hora, aluno:alunos!inner(id, turno, profile:profiles(nome))")
+      .order("dia_semana").order("hora");
+    if (turno) q = q.eq("aluno.turno", turno);
+    const { data } = await q;
+    return { grade: (data ?? []).filter((h: any) => h.aluno), turno };
+  });
+
+// Grade COMPLETA (todos os turnos) — só liberada para o aluno quando
+// vai agendar uma reposição (precisa ver slots disponíveis em outros turnos).
+export const gradeCompletaReposicao = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const aluno = await getMyAluno(context.supabase, context.userId);
+    if (!aluno || aluno.saldo_reposicoes <= 0) {
+      throw new Error("Sem crédito de reposição");
+    }
     const { data } = await context.supabase
       .from("horarios_fixos")
       .select("id, dia_semana, hora, aluno:alunos(id, profile:profiles(nome))")
