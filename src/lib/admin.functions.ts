@@ -802,23 +802,46 @@ export const listarHorariosTodos = createServerFn({ method: "GET" })
 
 export const relatorios = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: unknown) => {
+    const v = (input ?? {}) as { periodo?: string };
+    const periodo = v.periodo === "dia" || v.periodo === "semana" || v.periodo === "mes" || v.periodo === "ano"
+      ? v.periodo : "ano";
+    return { periodo: periodo as "dia" | "semana" | "mes" | "ano" };
+  })
+  .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const ano = new Date().getFullYear();
-    const { data: pagos } = await context.supabase
-      .from("pagamentos").select("valor, data_pagamento, status")
-      .gte("data_pagamento", `${ano}-01-01`).eq("status", "pago");
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    // Calcula intervalo conforme filtro
+    const start = new Date(hoje);
+    if (data.periodo === "dia") {
+      start.setHours(0, 0, 0, 0);
+    } else if (data.periodo === "semana") {
+      start.setDate(hoje.getDate() - 7);
+    } else if (data.periodo === "mes") {
+      start.setMonth(hoje.getMonth(), 1);
+    } else {
+      start.setMonth(0, 1);
+    }
+    const startISO = start.toISOString().slice(0, 10);
+
+    const [{ data: pagosPeriodo }, { data: pagosAno }] = await Promise.all([
+      context.supabase.from("pagamentos").select("valor, data_pagamento, status, forma")
+        .gte("data_pagamento", startISO).eq("status", "pago"),
+      context.supabase.from("pagamentos").select("valor, data_pagamento, status")
+        .gte("data_pagamento", `${ano}-01-01`).eq("status", "pago"),
+    ]);
     const porMes: Record<number, number> = {};
-    for (const p of pagos ?? []) {
+    for (const p of pagosAno ?? []) {
       const m = new Date(p.data_pagamento!).getMonth();
       porMes[m] = (porMes[m] ?? 0) + Number(p.valor);
     }
+    const receitaPeriodo = (pagosPeriodo ?? []).reduce((s, p: any) => s + Number(p.valor), 0);
     const receitaAnual = Object.values(porMes).reduce((a, b) => a + b, 0);
-    const { count: presencas } = await context.supabase.from("presencas").select("id", { count: "exact", head: true });
-    const { count: reposicoes } = await context.supabase.from("reposicoes").select("id", { count: "exact", head: true });
-    // Inadimplentes automáticos: alunos ativos sem pagamento pago do mês corrente
-    // (considera somente após o dia 10 — antes disso não é inadimplência).
-    const hoje = new Date();
+    const { count: presencas } = await context.supabase.from("presencas").select("id", { count: "exact", head: true }).gte("data", startISO);
+    const { count: reposicoes } = await context.supabase.from("reposicoes").select("id", { count: "exact", head: true }).gte("created_at", startISO);
+
+    // Inadimplentes: só após dia 10
     const mesISO = hoje.toISOString().slice(0, 7) + "-01";
     let inadimplentes: any[] = [];
     if (hoje.getDate() >= 11) {
@@ -831,6 +854,8 @@ export const relatorios = createServerFn({ method: "GET" })
       inadimplentes = (ativos ?? []).filter((a: any) => !pagosSet.has(a.id));
     }
     return {
+      periodo: data.periodo,
+      receitaPeriodo,
       receitaPorMes: Array.from({ length: 12 }).map((_, i) => ({ mes: i + 1, valor: porMes[i] ?? 0 })),
       receitaAnual, totalPresencas: presencas ?? 0, totalReposicoes: reposicoes ?? 0,
       inadimplentes: inadimplentes ?? [],
