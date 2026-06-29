@@ -7,6 +7,15 @@ async function assertAdmin(supabase: any, userId: string) {
   if (!data) throw new Error("Acesso negado: apenas administradores");
 }
 
+async function assertProfessorOrAdmin(supabase: any, userId: string) {
+  const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+  const roles = (data ?? []).map((r: any) => r.role);
+  if (!roles.includes("professor") && !roles.includes("admin")) {
+    throw new Error("Acesso negado");
+  }
+  return roles;
+}
+
 export const dashboardAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -860,4 +869,128 @@ export const relatorios = createServerFn({ method: "GET" })
       receitaAnual, totalPresencas: presencas ?? 0, totalReposicoes: reposicoes ?? 0,
       inadimplentes: inadimplentes ?? [],
     };
+  });
+
+
+// ============ Aulas Experimentais ============
+export const listarAulasExperimentais = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertProfessorOrAdmin(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("aulas_experimentais")
+      .select("*")
+      .order("data_aula", { ascending: true });
+    return data ?? [];
+  });
+
+export const agendarAulaExperimental = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      aluno_profile_id: z.string().uuid(),
+      aluno_nome: z.string().min(1),
+      aluno_email: z.string().email().optional().nullable(),
+      aluno_telefone: z.string().optional().nullable(),
+      professor_profile_id: z.string().uuid().optional().nullable(),
+      data_aula: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      hora_aula: z.string().regex(/^\d{2}:\d{2}$/),
+      observacao: z.string().max(500).optional().nullable(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertProfessorOrAdmin(context.supabase, context.userId);
+    
+    const d = new Date(`${data.data_aula}T00:00:00`);
+    const diaSemana = ((d.getDay() + 6) % 7) + 1;
+    if (diaSemana > 5) throw new Error("Aulas experimentais apenas de segunda a sexta");
+    
+    // Verifica se já existe aula nesse horário
+    const { count } = await context.supabase
+      .from("aulas_experimentais")
+      .select("id", { count: "exact", head: true })
+      .eq("data_aula", data.data_aula)
+      .eq("hora_aula", data.hora_aula)
+      .eq("status", "agendada");
+    if ((count ?? 0) >= 4) throw new Error("Horário lotado (máx. 4 alunos)");
+    
+    const { error } = await context.supabase.from("aulas_experimentais").insert({
+      aluno_profile_id: data.aluno_profile_id,
+      aluno_nome: data.aluno_nome,
+      aluno_email: data.aluno_email,
+      aluno_telefone: data.aluno_telefone,
+      professor_profile_id: data.professor_profile_id,
+      data_aula: data.data_aula,
+      hora_aula: data.hora_aula,
+      dia_semana: diaSemana,
+      observacao: data.observacao,
+      criado_por: context.userId,
+    });
+    if (error) throw error;
+    
+    return { ok: true };
+  });
+
+export const cancelarAulaExperimental = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      aula_id: z.string().uuid(),
+      motivo_cancelamento: z.string().max(500).optional().nullable(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertProfessorOrAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("aulas_experimentais")
+      .update({
+        status: "cancelada",
+        cancelado_por: context.userId,
+        cancelado_em: new Date().toISOString(),
+        motivo_cancelamento: data.motivo_cancelamento,
+      })
+      .eq("id", data.aula_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const marcarAulaExperimentalComoRealizada = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ aula_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertProfessorOrAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("aulas_experimentais")
+      .update({ status: "realizada" })
+      .eq("id", data.aula_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const listarNotificacoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase
+      .from("notificacoes_aulas")
+      .select("*")
+      .eq("destinatario_id", context.userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    return data ?? [];
+  });
+
+export const marcarNotificacaoComoLida = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ notificacao_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("notificacoes_aulas")
+      .update({ lida: true, lida_em: new Date().toISOString() })
+      .eq("id", data.notificacao_id);
+    if (error) throw error;
+    return { ok: true };
   });
